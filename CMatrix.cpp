@@ -525,7 +525,11 @@ void create_matrix(string &s)
 	while (s[j] != ']')
 	{
 		if (s[j] == ';')
+		{
+			if (s[j + 1] == ']')
+				n_rows--;
 			n_rows++;
+		}
 		j++;
 	}
 
