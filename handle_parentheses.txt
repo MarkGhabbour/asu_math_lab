@@ -1,0 +1,79 @@
+
+//a function to handle_inputs containing multiple parentheses ()
+// if an input is  (     (A+B)/ ( C*D./4)    )
+//output will be : A+B_C*D./4_$0/$1    ///////// where $0 refers to A+B and $1 refers to C*D./4
+//the output of this function should be the input to another function that sorts it according to the priorities of operation
+//in the same line.. * has higher priorty than +      ..etc
+
+string handle_parentheses(string& s, char c = '0')
+{
+	string ss = "";  string o = "";  //ss temp string to get a string between 2 brackets and call urself
+                                     // o is a string to accumlate what i have finished
+	int start = 0; int end = 0;      // start and end are variables to find '(' and corresponding  ')'
+
+	int i = 0; static int count = -1; //i var to loop on string, //count var to be seen in all recursions to get $1, $2..etc
+
+	if (s.find(')') ==-1)  //if a string does not contain any brackets then return
+			return s;
+
+	while (    i<s.length()   ) //loop on the string
+	{
+		if (s[i] == '(')
+		{        //if i find a opening of a bracket
+			int j = 0;
+			{
+				while (j < s.length()) //getting the position of the corresponding ')'
+				{
+					if (s[j] == '(')
+						start++;
+					else if (s[j] == ')')
+						end++;
+					if (start == end && (s[j] == '(' || s[j] == ')'))
+						break;
+					j++;
+				}
+				ss = s.substr(i + 1, j - i - 1); //getting the string between these '(' ')'
+			}
+			o += handle_parentheses(ss , '1') + "_"; 
+			
+			//calling myself with a string betwwen '('  ')'
+			//the whole idea is just about calling yourself with a smaller string between '(' ')'
+			//until u find a string that does not contain any brackets then return
+			//then replace that bracket with all what is inside it with a variable name $n 
+			//dont care about this 1 parameter now, it will be explained later
+
+			count++;
+			s.replace(i, j - i + 1, "$" + to_string(count) );
+			
+			if (s.find('(') == -1)
+			{
+				if (s.length() < 4) //if s is only $1 after replacement, decrement count
+				{
+					count--;
+				}
+				else
+				  o += s;
+			}
+			//if my string contains no brackets then all brackets have been replaced
+			// with dollar sign variables, then i will add this to string o
+		}		
+		i++;
+    }
+	if (c == '0')
+	{     
+		count = 0;
+		i = o.length() - 1;
+
+		while (o[i] == '_')
+		{
+			o.erase(i,1);
+			i--;
+		}
+
+	}
+	//c is a dummy variable, if c='0' that means that i will go to main after return o
+	// so i must reset static variable count to zero for next time using this function
+	//if the last character of the string to be returned to main=='_' then remove this underscore
+	 
+	return o;
+}
