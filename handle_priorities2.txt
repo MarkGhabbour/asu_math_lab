@@ -1,0 +1,98 @@
+
+//a function to handle priorities in a string, it takes a string and an array containing operators having the same priority
+//for example the array can be * , / ,%..... another array can be sin, cos, tan, log
+//if the input string is A*B+C/3 the output will be A*B_C/3_
+
+
+string handle_priorities_2(string &s, string*op, int n_op, int continuee = 1, char cc = '0')
+{
+	//the whole idea of the function is taking a string that contain many operations(A*B+C/3), and taking an array of strings
+	//that contain the operations that have the same priority like *,/ then finding which of them occurs first
+	//then store the operation and its operands in string q, then replacing the original string with a hash and an index
+	//then calling yourself again with the new string, and accumlating strings in string o
+
+	int  j = 0, k = 0, l, pos = -1, start = 0;
+	static int count = 0;
+	//j first time counter for operation in array, k to put where you found the operation
+	//l to know index of operation in the array that comes first
+	//pos to know position of which op will be first
+	string o, q;
+	if (continuee == 0)
+	{
+		count = 0;
+	}
+
+	for (j = 0; j < n_op; j++)
+	{
+		//here i look for the first operation appearing in the string, note that the array contains
+		//operations with the same priority
+
+		k = s.find(op[j]);
+		if ((k < pos && k != -1) || (pos == -1 && k > pos))
+		{
+			if (k > 0)
+			{
+				if (op[j].length() == 1 & s[k - 1] == '.')
+					continue;//handling the condition for * , .*
+			}
+			     pos = k;
+				 l = j;
+			}
+		}
+	
+	j = pos - 1; start = pos;
+	if (pos != -1)
+	{
+		while (j < s.length() && j >= 0)//getting the operands of the operation backwards
+		{
+			if (s[j] != '*' &  s[j] != '/' &  s[j] != '^' &  s[j] != '+' & s[j] != '-' & s[j] != '\'')
+			{ 
+				q = s[j] + q; start = j;
+			}
+			else
+				break;
+			j--;
+		}
+		j = pos + op[l].length(); q += op[l];
+		//pushing j to right hanside if operation
+
+		while (j < s.length() && j >= 0)//getting the operands of the operation forward
+		{
+			if( s[j]!='*' &  s[j] != '/' &  s[j] != '^' &  s[j] != '+' & s[j] != '-' & s[j] != '\'' )
+			{
+				q += s[j];
+			}
+			else
+				break;
+			j++;
+		}
+		if ( q[q.length() - 1] == '.') //3shan lw hwa bya5od mn odamo lw la2a ./ msln hya5od el dot
+										//bs fe nfs el wa2t lw da raqam f momkn ykon feh decimal
+			q.erase(q.length()-1,1);
+
+		o += q + "_";
+		//replacing the operation and its operands with a hash after adding it to o
+		
+		s.replace(start, q.length() , "#" + to_string(count));
+		count++;
+		o += handle_priorities_2(s, op, n_op, 1, '1') + "_";
+	}
+	if (cc == '0')
+	{    //cc is a dummy variable to know that u are in the last recursion and will return to main
+		//this section only deletes unnecessary underscores of the string
+
+		j = 0; 
+		if (o.length() == 0)
+		return o;
+		while (j < o.length() - 1)
+		{
+		    if (o[j] == '_' & o[j + 1]=='_')
+			{
+				o.erase(j, 1); j--;
+			}
+			  j++;
+		}
+		
+	}
+	return o;
+}
