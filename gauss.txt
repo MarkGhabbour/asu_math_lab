@@ -1,0 +1,102 @@
+CMatrix::CMatrix(int r,int c,string type) // dummy constructor to make unity matrix i made a better one in the 2nd phase
+{
+		nrows = r;
+		ncols = c;
+		pp_rows = new double*[r];
+		for (int i = 0; i<r; i++) pp_rows[i] = new double[c];
+		for (int i = 0; i<r; i++){
+			for (int j = 0; j<c; j++){
+				if(i==j) pp_rows[i][j]=1;
+				else pp_rows[i][j] = 0;
+			}
+		}
+}
+
+CMatrix CMatrix::inv()
+{
+	CMatrix m=*this;
+	CMatrix x(m.nrows,m.ncols,"unity"); // creating a unity matrix   //this is a constructor needs to be completed i made a similar one can be removed just use it for now
+	for(int i=0;i<m.nrows;i++)
+	{
+		for(int j=0;j<m.ncols;j++)
+		{
+			double a=m.pp_rows[i][i];  // the element in the main diagonal
+			m.pp_rows[i][j]/=a;        // devide both the main matrix and the unity matrix by it to make the element in the main diagonal one
+			x.pp_rows[i][j]/=a;
+		}
+		for(int k=0;k<m.nrows;k++)
+		{
+			if(k==i) continue;
+			else 
+			{
+				for(int z=0;z<m.ncols;z++)    // looping through all elements except the main diagonal
+				{
+					double b=m.pp_rows[k][i]; // the corresponding element in each row we'll use it to zero the other elements under it
+					m.pp_rows[k][z]+=-1*b*m.pp_rows[i][z];
+					x.pp_rows[k][z]+=-1*b*x.pp_rows[i][z];
+				}
+			}
+		}
+	}
+	// just for printing the results for testing
+	for(int i=0;i<m.nrows;i++)
+	{
+		for(int j=0;j<m.ncols;j++)
+			cout<<m.pp_rows[i][j]<<" \t";
+		cout<<endl;
+	}
+	for(int i=0;i<x.nrows;i++)
+	{
+		for(int j=0;j<x.ncols;j++)
+			cout<<x.pp_rows[i][j]<<" \t";
+		cout<<endl;
+	}
+	//return the matrix that was a unity matrix
+	return x;
+}
+
+
+///////////////////// using lu decomposition //////////////////////////
+double CMatrix::get_determinant_LU()
+{
+	CMatrix m=*this;
+	double det=1;
+	for(int i=0;i<m.nrows;i++)
+	{
+		double a=m.pp_rows[i][i]; // if the element we wish to divide by is zero so we'll find another row and replace it with it and multiply by -1
+		if(a==0)
+		{
+			for(int x=i+1;x<m.nrows;x++)
+			{
+				int found=0;
+				if(m.pp_rows[x][i]!=0)
+				{
+					found=1;
+					a=m.pp_rows[x][i];
+					for(int y=0;y<m.ncols;y++)
+					{
+						double temp=m.pp_rows[i][y];
+						m.pp_rows[i][y]=m.pp_rows[x][y];
+						m.pp_rows[x][y]=temp;
+					}
+				}
+			if(found==1) {det*=-1; break;}
+			}
+		}
+		for(int j=i+1;j<m.nrows;j++)
+		{
+		//	a=m.pp_rows[i][i];
+			double b=m.pp_rows[j][i];
+			if(b==0) continue;
+			for(int k=0;k<m.ncols;k++)
+			{
+				double c=-b/a;
+				m.pp_rows[j][k]=m.pp_rows[j][k]+m.pp_rows[i][k]*c;
+			}
+		}
+	}
+	for(int i=0;i<m.nrows;i++) {det*=m.pp_rows[i][i];}
+//	for(int i=0;i<m.nrows;i++){for(int j=0;j<m.ncols;j++){cout<<m.pp_rows[i][j]<<"\t";}cout<<endl;}
+//	cout<<det;
+	return det;
+}
