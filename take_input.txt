@@ -1,0 +1,85 @@
+void take_input()
+{
+	while(1)
+	{
+		int CMatrix::print=0;	//this is the static variable of the class CMatrix::print
+		int open_brakets=0,closed_brakets=0,equal_sign=0;
+		string input="";
+		do
+		{
+			string h;
+			getline(cin,h);
+			input+=h;
+			for(int i=0;i<h.length();i++)
+				{
+					if(h[i]=='(' || h[i]=='[') open_brakets++;
+					else if(h[i]==')' || h[i]== ']') closed_brakets++;
+					else if(h[i]=='=') equal_sign++;
+				}
+		}
+		while(open_brakets != closed_brakets); 
+
+		//testing the input
+		cout<<input<<endl;
+		//remove spaces from the input
+
+		//storing the names of variables or matrices
+
+		if(input[input.length()-1]==';') CMatrix::print=1;
+
+		if(equal_sign==0) 
+		{
+			//so it's not an operation it's just printing the value of the operation in a temp value named as ans
+			//first check if there's an operation to make before printing the value
+			int op_found=input.find_first_of("+-/*.^");
+			if(op_found==string::npos)
+			{
+				//print the matrix or the variable and input= its name
+			}
+			else
+			{
+				//do the operation and print the value under the name "ans"
+			}
+
+		}
+		else if(input.find("rand")!= -1 || input.find("eye")!= -1 || input.find("zeros")!= -1 || input.find("ones")!= -1) 
+		{
+			// so it's a special  matrix definition
+			int nR=atof(input.substr(input.find("(")+1,input.find(",")-input.find("(")-1).c_str());
+			int nC=atof(input.substr(input.find(",")+1,input.find(")")-input.find(",")-1).c_str());
+			if(input.find("rand")!=-1)
+			{
+				//make a random matrix
+				//use the constructor by giving it nR,nC and the random mode
+			}
+			if(input.find("eye")!=-1)
+			{
+				//make a unity matrix
+				//use the constructor by giving it nR,nC and the unity mode
+			}
+			if(input.find("zeros")!=-1)
+			{
+				//make a zero matrix
+				//use the constructor by giving it nR,nC and the zero mode
+			}
+			if(input.find("ones")!=-1)
+			{
+				//make a one matrix
+				//use the constructor by giving it nR,nC and the one mode
+			}
+
+		}
+		else if(input.find("[")!=-1)
+		{
+			// it's a matrix definition
+			int begin=input.find("[");
+			int end=input.rfind("]");
+			string mat_string=create_mat(input.substr(begin+1,end-begin-1),1);
+		}
+		else
+		{
+			//it's a const or matrix operation
+			calculate_expression(input);
+		}
+	}
+}
