@@ -14,6 +14,8 @@ private:
 public:
 	static int  print;
 	CMatrix(int r, int c);
+	CMatrix(int r, int c, double a[][4]);
+	CMatrix::CMatrix(int r,int c,string type); // dummy constructor to make unity matrix i made a better one in the 2nd phase
 	CMatrix();
 	void destroy_matrix();
 	void copy_matrix(const CMatrix &m);
@@ -37,10 +39,13 @@ public:
 	CMatrix num_div_mat(double d);
 	void print_matrix(string name);
 
+	CMatrix CMatrix::inv();
 	friend void create_matrix(string&s);
 	friend int check(string);
 	friend void dop(string&s);
 	friend void  detect_instruction(string&s);
+	friend void CMatrix::add_two_rows(int dstn_row, int row1, int row2, int a_mult,CMatrix& a, CMatrix& unity);
+
 };
 
 #endif
