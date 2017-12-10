@@ -1,3 +1,5 @@
+
+#include "stdafx.h"
 #include"CMatrix.h"
 #include<vector>
 vector <CMatrix> v ;
@@ -224,14 +226,136 @@ CMatrix CMatrix::num_div_mat(double d)
 void CMatrix::print_matrix(string name)
 	{
 		if(print==0) return;
+		double a;//dummy var for test
 		cout << name << " =" << endl;
-		for (int i = 0; i<nrows; i++)
+		for (int i = 0; i < nrows; i++)
 		{
-			for (int j = 0; j<ncols; j++)
+			for (int j = 0; j < ncols; j++)
+			{
+				a=pp_rows[i][j];
 				cout << "\t" << pp_rows[i][j];
+			}
 			cout << endl;
 		}
 	}
+CMatrix::CMatrix(int r,int c,string type) // dummy constructor to make unity matrix i made a better one in the 2nd phase
+{
+		nrows = r;
+		ncols = c;
+		pp_rows = new double*[r];
+		for (int i = 0; i<r; i++) pp_rows[i] = new double[c];
+		for (int i = 0; i<r; i++){
+			for (int j = 0; j<c; j++){
+				if(i==j) pp_rows[i][j]=1;
+				else pp_rows[i][j] = 0;
+			}
+		}
+}
+CMatrix::CMatrix(int r, int c, double a[][4])
+{
+	nrows = r;
+	ncols = c;
+	
+	pp_rows = new double*[r];
+	for (int i = 0; i<r; i++) pp_rows[i] = new double[c];
+	for (int i = 0; i<r; i++) {
+		for (int j = 0; j<c; j++) {
+			pp_rows[i][j] = a[i][j];
+			
+		}
+	}
+
+
+}
+
+
+CMatrix CMatrix::inv()
+{
+	CMatrix m=*this;
+	CMatrix x(m.nrows,m.ncols,"unity"); // creating a unity matrix   //this is a constructor needs to be completed i made a similar one can be removed just use it for now
+	
+	
+	for(int i=0;i<m.nrows;i++)
+	{
+		double a = m.pp_rows[i][i];  // the element in the main diagonal
+
+		for (int j = 0; j < m.ncols; j++)
+		{
+			if (a)//if the element is not zero
+			{
+				m.pp_rows[i][j] /= a;  // divide both the main matrix and the unity matrix by it to make the element in the main diagonal one
+				x.pp_rows[i][j] /= a;
+			}
+			else//if pivot is zero
+			{
+			  for (int k = 0; k < m.nrows; k++)
+			  {
+			     if ( m.pp_rows[k][i] == 0) continue;
+					else
+					{
+						//adding the row with the non zero pivot to the sec row with the zero pivot
+						//and the dstn row is the row with the zero pivot
+						add_two_rows(i/*dstn_row*/, i/*row1*/, k/*row2*/, 1/*mult_of_a_row1*/, m/*matrix*/, x/*unity*/);
+						j--;
+						a = m.pp_rows[i][i];
+						break;
+					}
+				}
+			}
+		}
+		for(int k=0;k<m.nrows;k++)
+		{
+			if(k==i) continue;
+			else 
+			{
+				double b = m.pp_rows[k][i]; // the corresponding element in each row we'll use it to zero the other elements under it
+
+				for(int z=0;z<m.ncols;z++)    // looping through all elements except the main diagonal
+				{
+					m.pp_rows[k][z]+=-1*b*m.pp_rows[i][z];//pprows[i][z]*b is multip of row of pivot by element under or above pivot
+					x.pp_rows[k][z]+=-1*b*x.pp_rows[i][z];
+				}
+			}
+		}
+	}
+	// just for printing the results for testing
+	/*
+	for(int i=0;i<m.nrows;i++)
+	{
+		for(int j=0;j<m.ncols;j++)
+			cout<<m.pp_rows[i][j]<<" \t";
+		cout<<endl;
+	}
+	for(int i=0;i<x.nrows;i++)
+	{
+		for(int j=0;j<x.ncols;j++)
+			cout<<x.pp_rows[i][j]<<" \t";
+		cout<<endl;
+	}
+	//return the matrix that was a unity matrix
+	*/
+	return x;
+}
+
+void add_two_rows(int dstn_row, int row1, int row2, int a_mult , CMatrix &a, CMatrix& unity)
+{
+
+	double test; //dummy var
+	{
+		for (int j = 0; j < a.ncols; j++)
+		{
+			a.pp_rows[dstn_row][j] = a.pp_rows[row1][j]*a_mult+ a.pp_rows[row2][j];
+			unity.pp_rows[dstn_row][j] = unity.pp_rows[row1][j] * a_mult + unity.pp_rows[row2][j];
+			test = a.pp_rows[dstn_row][j];
+
+		}
+
+	}
+
+
+}
+
+
 
 
 
