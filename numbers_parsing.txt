@@ -7,6 +7,7 @@
 #include<time.h>
 
 using namespace std;
+float vector_cal ( vector <float> v , vector<char>signs );
 
 bool checkchar(char x)
 {
@@ -22,19 +23,41 @@ float domath(string&a)
 	string n1 = ""; float result=0;
 	unsigned int length = a.length();
 	 int no_of_char = 0;
-	  static string last="!";
+	  string last="";
 	vector <float> v;
 	vector<char> signs;
 	string function="";
 	while(no_of_char < length)
 	{
-		if( checkchar(a[no_of_char]) ||(a[no_of_char]=='-' && checkchar(a[no_of_char+1])) )
+		if( checkchar(a[no_of_char]) ||(a[no_of_char]=='-' && n1==""&&last!=")") )
 		{
+			if(last=="^") 
+			{
+				while( (checkchar(a[no_of_char]))||(a[no_of_char]=='-'&&n1==""))
+				{
+					n1+=a[no_of_char];
+					no_of_char++;
+				}
+			v.push_back(pow(result , atof( n1.c_str())));
+			last = ")";
+			n1="";
+			}
+			else
+			{
 			n1+=a[no_of_char];
 			no_of_char++;
 			last="!";
+			}
 		}
-		else if(a[no_of_char]=='+' ||(a[no_of_char]=='-'&&a[no_of_char +1]==' ' )||a[no_of_char]=='*'||a[no_of_char]=='/')
+
+		else if (a[no_of_char]=='^')
+		{
+			result = atoi (n1.c_str());
+			last = "^";
+			n1="";
+			no_of_char++;
+		}
+		else if(a[no_of_char]=='+' ||(a[no_of_char]=='-')||a[no_of_char]=='*'||a[no_of_char]=='/')
 		{
 			
 			if(n1!="")
@@ -65,23 +88,11 @@ float domath(string&a)
 				v.push_back(result);
 				result = 0;n1="";
 			}
-			while(no_of_char<length)
-			{
-				if(!checkchar(a[no_of_char]))
-				{
-					no_of_char++;
-					continue;
-				}
-				else
-				{
-					while(checkchar(a[no_of_char])||(a[no_of_char]=='-'&&n1==""))
+			while((checkchar(a[no_of_char])||(a[no_of_char]=='-'&&n1==""))&&no_of_char < length)
 					{
 						n1+=a[no_of_char];
 						no_of_char++;
 					}
-				}
-				break;
-			}
 			result = atof(n1.c_str());
 			n1="";
 			if(function=="sin") v.push_back(sin(result));
@@ -92,6 +103,8 @@ float domath(string&a)
 			if(function=="csc")v.push_back(1.0/sin(result));
 			if(function=="exp")v.push_back(exp(result));
 			result =0;
+			last=")";
+
 		}
 		else
 			no_of_char++;
@@ -101,6 +114,13 @@ l1:	if(n1 != "")
 		float ni=stof(n1);
 		v.push_back(ni);
 	}
+
+	return vector_cal ( v , signs );
+}
+
+float vector_cal ( vector <float> v , vector<char>signs )
+{
+	float result = 0;
 	int size = v.size();
 	bool flag = false;int i,j;
 	float *p=new float[size];
@@ -202,7 +222,6 @@ float subcal(string h,int nb)
 		float result;
 		string part="";
 		int *pos=new int[nb];
-		char*bef=new char[nb];
 		int length=h.length();
 		int d=0;int i;int count=0;
 		for(i=0;i<length;i++)
@@ -214,33 +233,6 @@ float subcal(string h,int nb)
 			d++;count++;
 		}
 		d=0;i=0;bool flag=true;
-		for(int j=0;j<nb;j++)
-		{
-			if(j==0)i=j;
-			else i=pos[d-1];
-			while(i<pos[j])
-			{
-				if(h[i]=='1'||h[i]=='0' || h[i]=='2'|| h[i]=='3'|| h[i]=='4'|| h[i]=='5'|| h[i]=='6'|| h[i]=='7'|| h[i]=='8'|| h[i]=='9')
-					bef[d]='!';
-				else if(h[i]=='(') bef[d]='(';
-				else if (h[i]=='s'&&h[i+1]=='i'&&h[i+2]=='n') {bef[d]='s';i=i+2;}
-				else if (h[i]=='c'&&h[i+1]=='o'&&h[i+2]=='s') {bef[d]='c';i=i+2;}
-				else if (h[i]=='t'&&h[i+1]=='a'&&h[i+2]=='n') {bef[d]='t';i=i+2;}
-				else if (h[i]=='s'&&h[i+1]=='e'&&h[i+2]=='c') {bef[d]='e';i=i+2;}
-				else if (h[i]=='c'&&h[i+1]=='s'&&h[i+2]=='c') {bef[d]='#';i=i+2;}
-				else if(h[i]==')') bef[d]=')';
-				 if(h[i]!=' '&&h[i]!='1'&&h[i]!='1'&&h[i]!='2'&&h[i]!='3'&&h[i]!='4'&&h[i]!='5'&&h[i]!='6'&&h[i]!='7'
-					 &&h[i]!='8'&&h[i]!='9'&&h[i]!='0') 
-					 bef[d]=h[i];
-				i++;
-				flag=false;
-			}
-			if(flag==true) {bef[d]='@';}
-			else {flag=true;}
-			cout<<bef[d]<<endl;
-			d++;
-		}
-		i=0;d=0;flag=true;
 		for(i=0;i<count;i++)
 		{
 			d=pos[i];
@@ -263,14 +255,7 @@ float subcal(string h,int nb)
 				break;
 			}
 		}
-		if(bef[i]=='!' || bef[i]==')') h=h.replace(pos[i],d-pos[i]+1,"*"+to_string(domath(part)));
-		else if(bef[i]=='@'||bef[i]=='(')h=h.replace(pos[i],d-pos[i]+1,to_string(domath(part)));
-		else if(bef[i]=='s')h=h.replace(pos[i],d-pos[i]+1,to_string(sin(domath(part))));
-		else if(bef[i]=='c')h=h.replace(pos[i],d-pos[i]+1,to_string(cos(domath(part))));
-		else if(bef[i]=='t')h=h.replace(pos[i],d-pos[i]+1,to_string(tan(domath(part))));
-		else if(bef[i]=='e')h=h.replace(pos[i],d-pos[i]+1,to_string(1.0/cos(domath(part))));
-		else if(bef[i]=='#')h=h.replace(pos[i],d-pos[i]+1,to_string(1.0/sin(domath(part))));
-		else h=h.replace(pos[i],d-pos[i]+1,to_string(domath(part)));
+		 h=h.replace(pos[i],d-pos[i]+1,to_string(domath(part)));
 		cout<<"my favourite part is "<<h<<endl;
 		if(h.find('(',0)==-1)
 			return domath(h);
@@ -302,7 +287,7 @@ float calculate(string a)
 	int length = a.length();vector<float> v;vector<char>signs;float result=0;
 	while(no_of_char<length)
 	{
-		if(checkchar(a[no_of_char]) || (a[no_of_char]=='-' &&checkchar(a[no_of_char+1])) )
+		if(checkchar(a[no_of_char]) || (a[no_of_char]=='-' &&w==""&&last!=")") )
 		{
 			w+=a[no_of_char];
 			if(last!="^")last = "!";
@@ -310,7 +295,7 @@ float calculate(string a)
 			if(no_of_char+1 == length&&last=="^") { v.push_back(pow(result,atof(w.c_str())));w="";result=0;}
 			no_of_char++;
 		}
-		else if(a[no_of_char]=='+' ||(a[no_of_char]=='-'&&a[no_of_char +1]==' ' )||a[no_of_char]=='*'||a[no_of_char]=='/')
+		else if(a[no_of_char]=='+' ||(a[no_of_char]=='-')||a[no_of_char]=='*'||a[no_of_char]=='/')
 		{
 			if(result!=0&&last==")")
 			{
@@ -346,9 +331,6 @@ float calculate(string a)
 			no_of_char++;
 			last="^";
 		}
-
-
-
 
 
 		else if( (a[no_of_char] == 'l'&&a[no_of_char+1]=='o'&&a[no_of_char+2]=='g')||(a[no_of_char] == 's'&&a[no_of_char+1]=='i'&&a[no_of_char+2]=='n')
@@ -392,7 +374,7 @@ float calculate(string a)
 			}
 			int end = no_of_char;
 			w=w.erase(0,1);w=w.erase(w.length()-1,1);
-			float res = subcal(w,noopen);
+			float res = subcal(w,noopen-1);
 			w="";
 			if(function=="sin") v.push_back(sin(res));
 			if(function=="cos")v.push_back(cos(res));
@@ -402,6 +384,7 @@ float calculate(string a)
 			if(function=="csc")v.push_back(1.0/sin(res));
 			if(function=="exp")v.push_back(exp(res));
 			result =0;
+			last = ")";
 			no_of_char=end+1;
 		}
 
@@ -409,10 +392,6 @@ float calculate(string a)
 		else if(a[no_of_char]=='(')
 		{
 			coo++;
-			if(last==")")
-			{
-				signs.push_back('*');
-			}
 			if(w!="")
 			{
 				result = atof(w.c_str());
@@ -449,7 +428,7 @@ float calculate(string a)
 			{
 				float e = subcal(w,noopen-1);
 				v.push_back( pow( result,e ));
-				coo=0;
+				coo=0;result = 0;
 			}
 			w="";
 			last=")";
@@ -472,102 +451,13 @@ float calculate(string a)
 		float ni=stof(w);
 		v.push_back(ni);
 	}
-	int size = v.size();
-	cout<<"size of vector = " <<v.size()<<endl;
-	bool flag = false;int i,j;
-	float *p=new float[size];
-	if(size==1)
-	{
-		result = v[0];
-		return result;
+	return vector_cal ( v , signs );
 	}
-	for(int r =0;r<size;r++)
-	{
-		p[r] = v[r];
-		cout<<v[r]<<endl;
-	}
-
-	char *sign = new char[signs.size()];
-	for(int q =0;q<signs.size();q++)
-	{
-		sign[q] = signs[q];
-		cout<<sign[q]<<endl;
-	}
-	float total;
-	while(size > 1)
-	{
-		for(i=0;i<size-1;i++)
-		{
-			if(sign[i]=='*' || sign[i]=='/')
-			{
-				flag = true;
-				break;
-			}
-		}
-		if(flag == true)
-		{
-			flag = false;
-			size--;
-			float *temp = new float[size];
-			for(j=0;j<size;j++)
-			{
-				if(j==i && sign[i] == '*')
-				{temp[j] = p[j]*p[j+1];if(size==1) return temp[j];}
-				else if(j==i && sign[i] == '/')
-					{temp[j] = p[j]/p[j+1];if(size==1) return temp[j];}
-				else if ( j<i)
-					temp[j] = p[j];
-				else
-					temp[j] = p[j+1];
-			}
-			p=temp;
-			char*temps = new char [size-1];
-			for(j=0;j<size-1;j++)
-			{
-				if(j<i)
-					temps[j] = sign[j];
-				else
-					temps[j]=sign[j+1];
-			}
-			sign = temps;
-		}
-		else
-		{
-			size--;
-			float *temp = new float[size];
-			if(sign[0] == '-') {temp[0] = p[0]-p[1];result = temp[0];}
-			if(sign[0] == '+') {temp[0] = p[0]+p[1];result = temp[0];}
-			if(size>1)
-			{
-				for(j=1;j<size;j++)
-				{
-					temp[j] = p[j+1];
-				}
-				p=temp;
-			}
-			if(size-1 >=1)
-			{
-				char*temps = new char [size-1];
-				for(j=0;j<size-1;j++)
-				{
-					temps[j]=sign[j+1];
-				}
-				sign = temps;
-			}
-		}
-	}
-	return result;
-}
-
-
-
-
-
-
+	
 
 int main()
 {
-	string h ="1.2 * 3*(3*4*(6- 5)*(4+5))";
-	cout<<calculate(h)<<endl;
+	string h ="(2^1-sin(5)*exp(2))-1";
+	cout<<"final result is " <<calculate(h)<<endl;
 	return 0;
 }
