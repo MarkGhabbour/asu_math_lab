@@ -123,17 +123,20 @@ string create_mat(string h,int mode)
         string mat_name=create_mat(h.substr(open_braket_pos+1,closed_braket_pos-open_braket_pos-1),2);
         h.replace(open_braket_pos,closed_braket_pos-open_braket_pos,mat_name);
         }*/
-	int brakets=0,flag=0,open_braket_pos,closed_braket_pos;
+	int brakets=0,flag=0,open_braket_pos,closed_braket_pos,smallest_closed=0,first_open=0,first_open_pos;
 	for(int i=0;i<=h.length();i++)
 	{
-		if(h[i]=='[') {brakets++; flag=1; open_braket_pos=i;}
-		else if(h[i]==']') {brakets--; closed_braket_pos=i;}
+		if(h[i]=='[') {brakets++; flag=1; open_braket_pos=i;if(first_open==0){first_open=1;first_open_pos=i;}}
+		else if(h[i]==']') {brakets--; if(smallest_closed==0){closed_braket_pos=i;smallest_closed=1;brakets=0;}}
 
 		if(flag==1 && brakets==0)
 		{
 			string mat_name=create_mat(h.substr(open_braket_pos+1,closed_braket_pos-open_braket_pos-1),2);
 			h.replace(open_braket_pos,closed_braket_pos-open_braket_pos+1,mat_name);
-			i=open_braket_pos+1;
+		//	i=open_braket_pos+1;
+			i=first_open_pos-1;
+			smallest_closed=0;
+			first_open=0;
 			flag=0;
 		}
 	}
@@ -145,14 +148,14 @@ string create_mat(string h,int mode)
 		int pos=h.find(mats[i].name);
 		if(pos!=-1)
 		{
-			if( (pos==0 ||h[pos-1]==';' ) && (pos==h.length()-1 ||h[pos+mats[i].name.length()]==';') )
+			if( (pos==0 ||h[pos-1]==';' ) && (pos==h.length()-mats[i].name.length() ||h[pos+mats[i].name.length()]==';') )
 			{
 				h.replace(pos,mats[i].name.length(),concat(mats[i],CMatrix(0,0)));   //edit
 			}
 			else if((pos==0 ||h[pos-1]==';') && (h[pos+mats[i].name.length()]==' '||h[pos+mats[i].name.length()]==','))
 			{
 				int second_mat_pos=h.find_first_of(" ;",pos+mats[i].name.length()+1);
-				string second_mat=h.substr(pos+mats[i].name.length()+1,second_mat_pos-pos-mats[i].name.length());
+				string second_mat=h.substr(pos+mats[i].name.length()+1,second_mat_pos-pos-mats[i].name.length()-1);
 				for(int j=0;j<mats.size();j++)
 				{
 					if(second_mat==mats[j].name)
@@ -197,5 +200,6 @@ int main()
 
   CMatrix R(create_mat("1.2 2.3 A;[1.3 2.4;4.6 1.3],[3.2;7.8]",1),"R");
   R.print_mat();
+  CMatrix(create_mat("[C [1;-2;5]];A 3 2 B",1),"N").print_mat();
 	return 0;
 }
