@@ -165,7 +165,7 @@ double CMatrix::get_determinant()
 CMatrix CMatrix::operator/(CMatrix &m)
 	{
 	//	if(m.nrows!=m.ncols || this->nrows!=this->ncols) {cout<<"non-square matrix"<<endl; return;}
-		double a=m.get_determinant_LU();
+		/*double a=m.get_determinant_LU();
 	//	if (a==0) {cout<<"the determinant of the matrix=0"<<endl; return;}
 		CMatrix x(m.nrows,m.ncols); int sign=1;
 		for(int i=0;i<x.nrows;i++)
@@ -177,8 +177,8 @@ CMatrix CMatrix::operator/(CMatrix &m)
 				//sign*=-1;
 			}
 		}
-		x=x.transpose();
-		return *this*x*(1.0/a);
+		x=x.transpose();*/
+		return ( (m.inv()) * (*this) );
 	}
 
 CMatrix CMatrix::operator/(double d)
