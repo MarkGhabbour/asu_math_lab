@@ -1,0 +1,162 @@
+
+
+void calculate_expression(string s)
+{
+	//////// cout part /////////////
+	cout << endl << "  my_string = " << s << endl<<endl;
+	
+	string my_string_after_parentheses = handle_parentheses(s);
+	string my_string_after_priorities = handle_priorities(my_string_after_parentheses);
+
+	/////////// cout part //////////
+	cout << "  my_string_after_parentheses = " << my_string_after_parentheses << endl<<endl;
+	cout << "  my_string_after_priorities  = " << my_string_after_priorities << endl<<endl;
+
+	
+
+	//the part before this line working fine
+
+	string my_operation_as_lines[30];//just an arbitary number for the max 
+									 //parsing string after priorities..i.e if i have c*D_#0.+4 
+									 //the [0] = c*D, [1]= #0.+4 [2]="$$"
+
+	int counter_arr_myop_as_lines = 0; int start = 0;
+
+   
+
+	for (int j = 0; j < my_string_after_priorities.length(); j++)
+	{
+		if (my_string_after_priorities[j] == '_')
+		{
+			my_operation_as_lines[counter_arr_myop_as_lines] = my_string_after_priorities.substr(start, j - start );
+			start = j + 1;
+			counter_arr_myop_as_lines++;
+		}
+		else if (my_string_after_priorities[j] == '!')
+		{
+			my_operation_as_lines[counter_arr_myop_as_lines] = "$$";
+			start = j + 1;
+			counter_arr_myop_as_lines++;
+		}
+	}
+	my_operation_as_lines[counter_arr_myop_as_lines-1] = "00";
+
+	///////////////   cout part //////////////
+
+	cout << endl << "  my_operation_as_lines = " << endl;
+	for (int j = 0; j < counter_arr_myop_as_lines; j++)
+		cout << "  " << my_operation_as_lines[j] << endl;
+	//part before this line working fine
+	
+
+	string my_operation[100];
+	
+	//array similar to one we dealt with in dop in phase1, [0]=c ,[1]=*, [2]=D [4]=$$
+	//difference is between operation of the same line there is "$$"
+	//when the line ends there is "##"
+	//at the end of the array at the end of all lines there is "00"
+
+	int  index = 0, pos = 0, my_operation_index = 0;
+	string q;
+
+	q = my_operation_as_lines[index];
+	
+	//index is a variable to loop on an a previous array, it is not very important
+	//my_operation_index is a variable used to store in my_operation array, after this loo
+	//my_operation_index carries number of elements in my_operation array
+	//q is just a temp string to hold the string in my_operation_as_lines[index]
+	//pos is integer to store where i find the operators like .+ , / , *
+
+	
+	while (index < counter_arr_myop_as_lines)
+	{
+		//^,*,/,+,-,.^,*,./,.+,.-,sin,cos,log,ln,'
+
+		q = my_operation_as_lines[index];
+
+		if (q == "$$")
+		{
+			my_operation[my_operation_index-1] = "##";
+			
+		}
+		else if (q == "00")
+		{
+			my_operation[my_operation_index-1] = "00";
+			my_operation_index++;
+			break;
+		}
+
+
+		else if (q.find("sin") != -1 || q.find("cos") != -1 || q.find("'") != -1
+			|| q.find("log") != -1 || q.find("ln")!=-1 || q.find("sqrt") != -1)
+		{
+			my_operation[my_operation_index] = q;
+			my_operation_index++;
+			my_operation[my_operation_index] = "$$";
+			my_operation_index++;
+		}
+
+		else if ((pos = q.find(".^")) != -1 || (pos = q.find(".*")) != -1 ||
+			(pos = q.find("./")) != -1 || (pos = q.find(".+")) != -1 ||
+			(pos = q.find(".-")) != -1)
+		{
+			my_operation[my_operation_index] = q.substr(0, pos);
+			my_operation_index++;
+			my_operation[my_operation_index] = q.substr(pos, 2); //length of ./
+			my_operation_index++;
+			my_operation[my_operation_index] = q.substr(pos + 2, q.length() - (pos + 2) + 1 );//pos+2 is the number of char after ./ 
+			my_operation_index++;																			//+1 to take the last char
+			my_operation[my_operation_index] = "$$";
+			my_operation_index++;
+			
+		}
+		else if ((pos = q.find("^")) != -1 || (pos = q.find("*")) != -1 ||
+			(pos = q.find("/")) != -1 || (pos = q.find("+")) != -1 ||
+			(pos = q.find("-")) != -1)
+		{
+			my_operation[my_operation_index] = q.substr(0, pos);
+			my_operation_index++;
+			my_operation[my_operation_index] = q.substr(pos, 1); //length of +
+			my_operation_index++;
+			my_operation[my_operation_index] = q.substr(pos + 1, q.length() - (pos + 1 ) + 1 );
+			my_operation_index++;
+			my_operation[my_operation_index] = "$$";
+			my_operation_index++;
+		}
+		else
+		{
+			my_operation[my_operation_index] = q;
+			my_operation_index++;																			
+			my_operation[my_operation_index] = "##";
+			my_operation_index++;
+		}
+		
+		index++;
+	}
+
+	/////////// cout part ////////////////////
+	cout << endl<<"  my operation = "<<endl;
+	for (int j = 0; j < my_operation_index; j++)
+		cout<<"  "<<my_operation[j] << endl;
+	//part before this line is working fine
+
+	//here martin or farOoOoOoga will use the array my_operation to calculate the operations  in a similar way to phase1
+	//first 
+	//lines are divided in the array by ##, that means if an element in this array is ## this is a new line
+	//C*D, #0.+4 //means you will calculate C*D then store it, #0 refers to c*D, then #0.+4 refers to #1 and can be used
+	//then there is a new line u know this when you find ##
+	//the value of (C*D).+4 should be stored and known as $0
+    // my_operation may contain an element as a variable with no operation 
+	//say my_operation[1]="D"; then you will only store $1 as the value of D
+
+
+
+
+
+}
+
+
+
+
+
+

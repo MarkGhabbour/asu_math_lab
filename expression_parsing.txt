@@ -1,0 +1,162 @@
+CMatrix trigofmatrix (CMatrix &a , string type)
+{
+	///// this function wheather type is sqrt or sin or log or ln of matrix a then calculate it 
+	////and return result
+	return a;
+}
+
+CMatrix cal_vectors ( vector<CMatrix>renew , string op )
+{
+	CMatrix result;
+	if((op == ".*" )|| (op == "./") ||(op == ".+" )||(op == ".-" ) ) /* matrix .* matrix  OR no ./ matrix */
+	{
+		if(renew[0].type && renew[1].type )  /* matrix .- matrix */
+		{
+			if( op == ".+" ) return result ;   /* should return renew[0] .+ renew[1] */
+			else if ( op ==".-") return result ; 
+			else if ( op == ".*" ) return result ;
+			else return result;
+		}
+		else    // num .+ matrix 
+		{
+			float number = 0;
+			if(!renew[0].type) number = renew[0].pp_rows[0][0];
+			else number = renew[1].pp_rows[0][0];
+			if( op == ".*" ) return result;
+			else if(op=="./") return result ;
+			else if ( op==".+") return result;
+			else return result;
+		}
+	}
+	else  /* number+number OR matrix + matrix */
+	{
+		if(renew[0].type && renew[1].type )
+		{
+			// check + , - , * or / then perform operation on matrices
+			return result;
+		}
+		else
+		{
+			result.type=false;result.nrows=1;result.ncols=1;
+			result.pp_rows[0][0] = 1 ;  // result.pp_rows[0][0] = 2*3 or 4+5 etc
+			return result;
+		}
+	}
+}
+
+
+
+CMatrix calculatemat(string a[],int &n) //bktb fl dollar sign lma alaay 2 hashes only w afdy l hashat. bktb fl hashes lma allaey 2 dollars
+{
+	CMatrix first(0,0) ,second(0,0);
+	vector<CMatrix> hash ;
+	vector<CMatrix> ds;
+	vector<CMatrix>renew;
+	int no =0;
+	string temp="";
+	string last="";
+	bool pushhash=0;
+	while(no<n)
+	{
+		temp= a[no];
+		int length = temp.length();
+		int no_char =0 ;
+
+		if((temp[0]=='s'&&temp[1]=='i')||(temp[0]=='l'&&temp[1]=='o')||(temp[0]=='c'&&temp[1]=='o')||(temp[0]=='t'&&temp[1]=='a')
+			||(temp[0]=='e'&&temp[1]=='x')) // therefore we have log or sin or exp or cos or tan
+		{
+			string function = temp.substr(0 , 3);
+			no_char+=3;
+			char special = temp[no_char];
+			no_char++;
+			int getno = atoi(temp.substr(no_char , length - no_char).c_str());
+			if(special=='#') {renew.push_back(trigofmatrix(hash[getno] , function));}
+			else renew.push_back(trigofmatrix(ds[getno] , function));
+			no++;
+		}
+
+		else if ( temp[0]=='s' && temp[1]=='q')
+		{
+			string function = temp.substr(0 , 4);
+			no_char+=4;
+			char special = temp[no_char];no_char++;
+			int getno = atoi(temp.substr(no_char , length - no_char).c_str());
+			if(special=='#') {renew.push_back(trigofmatrix(hash[getno] , function));}
+			else renew.push_back(trigofmatrix(ds[getno] , function));
+			no++;
+		}
+		else if (temp[0]=='#'||temp[0]=='$') 
+		{
+			char special = temp[0];
+			no_char++;
+			int getno = atoi(temp.substr(no_char , length-no_char).c_str());
+			if(special=='#') renew.push_back(hash[getno]);
+			else renew.push_back(ds[getno]);
+			no++;
+		}
+		else if (checkchar(temp[0])||temp[0]=='-')    /* here we have a number so store it as 1*1 matrix */
+		{
+			CMatrix c ;
+			c.nrows=1;c.ncols=1;
+			c.type=false;
+			c.pp_rows=new double *[1];
+			c.pp_rows[0][0] = atof ( temp.c_str() ) ;
+			renew.push_back ( c );
+			no++;
+		}
+		else if ( (temp[0] >= 65 && temp[0] <= 90) || (temp[0] >= 97 && temp[0] <= 122))  /* can be no or matrix */
+		{
+			if(check_for_var(temp)!= -1) /* therefore its a no*/
+			{
+				CMatrix c ; 
+				c.nrows=1;c.ncols=1;c.pp_rows=new double*[1];
+				c.pp_rows[0][0] = variables[check_for_var(temp)].value;
+				renew.push_back(c);
+				no++;
+			}
+			else    /* therefore its a matrix */
+			{
+				renew.push_back(v[check(temp)]);
+				no++;
+			}
+		}
+		else if (temp=="$$")
+		{
+			if(renew.size()==2) /* we have an operation .* or /*/
+			{
+				hash.push_back(cal_vectors(renew , a[no-2] ));
+				renew.erase ( renew.begin() , renew.begin()+2 ) ;
+				no++;
+			}
+			else  /*  we have only one element we want to store into hash */
+			{
+				hash.push_back(renew[renew.size()-1]);
+				renew.erase(renew.begin() , renew.begin()+1 );
+				no++;
+			}
+		}
+		else if ( temp=="##")
+		{
+			 if(renew.size()==2) /* we have an operation .* or /*/
+			{
+				ds.push_back(cal_vectors(renew , a[no-2] ));
+				renew.erase ( renew.begin() , renew.begin()+2 ) ;
+				hash.erase(hash.begin() , hash.begin()+hash.size() );
+				no++;
+			}
+			 else
+			 {
+				 ds.push_back(renew[renew.size()-1]);
+				 hash.erase(hash.begin() , hash.begin()+hash.size() );
+				 no++;
+			 }
+		}
+	}	
+
+	if ( renew.size() == 2 )
+	{
+		return cal_vectors(renew , a[no-2] );
+	}
+	else
+		return renew[renew.size() - 1 ] ;
+}
