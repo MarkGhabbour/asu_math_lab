@@ -273,22 +273,25 @@ CMatrix CMatrix::inv()
 {
 	CMatrix m=*this;
 	CMatrix x(m.nrows,m.ncols,"unity"); // creating a unity matrix   //this is a constructor needs to be completed i made a similar one can be removed just use it for now
-	
+	int start = 0;
 	
 	for(int i=0;i<m.nrows;i++)
 	{
 		double a = m.pp_rows[i][i];  // the element in the main diagonal
+		
 
 		for (int j = 0; j < m.ncols; j++)
 		{
-			if (a)//if the element is not zero
+			if (a == 1) break;//if the pivot equals one we will skip the part of dividing the elements by the pivot
+			else if (a)//if the pivot is not zero
 			{
 				m.pp_rows[i][j] /= a;  // divide both the main matrix and the unity matrix by it to make the element in the main diagonal one
 				x.pp_rows[i][j] /= a;
 			}
 			else//if pivot is zero
-			{
-			  for (int k = 0; k < m.nrows; k++)
+			{   //looping on the rows of the mat till finding a row that has a non zero element above or under the pivot
+				//then adding the 2 rows and dstn is the row that contained the zero pivot
+			  for (int k = i; k < m.nrows; k++)
 			  {
 			     if ( m.pp_rows[k][i] == 0) continue;
 					else
@@ -303,20 +306,34 @@ CMatrix CMatrix::inv()
 				}
 			}
 		}
+		//at this point we have a  non zero pivot at the row i am in
 		for(int k=0;k<m.nrows;k++)
 		{
-			if(k==i) continue;
-			else 
+			if(k==i) continue;//looping on rows except the row we are in
+			else
 			{
-				double b = m.pp_rows[k][i]; // the corresponding element in each row we'll use it to zero the other elements under it
+				double b = m.pp_rows[k][i]; 
+				//the element above or under the pivot in each row
 
-				for(int z=0;z<m.ncols;z++)    // looping through all elements except the main diagonal
+	
+				if (m.pp_rows[i][i])
+					for (int z = 0; z < m.ncols; z++)    // looping through all elements except the main diagonal
+					{
+						m.pp_rows[k][z] += -1 * b*m.pp_rows[i][z];//pprows[i][z]*b is multip of row of pivot by element under or above pivot
+						x.pp_rows[k][z] += -1 * b*x.pp_rows[i][z];
+					}
+				else
 				{
-					m.pp_rows[k][z]+=-1*b*m.pp_rows[i][z];//pprows[i][z]*b is multip of row of pivot by element under or above pivot
-					x.pp_rows[k][z]+=-1*b*x.pp_rows[i][z];
+						throw("matrix is singular");
 				}
+				//at this "else" it means that we are at the last row so all elements before the pivot are zeroes
+				//also we knew that the pivot is zero
+				//then it is a singular matrix. if a row is all zeroes then it can be eliminated
+				//then the matrix is not square and we cant get its inverse
 			}
+
 		}
+		////
 	}
 	// just for printing the results for testing
 	/*
