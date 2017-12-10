@@ -98,7 +98,7 @@ float domath(string&a)
 			if(function=="sin") v.push_back(sin(result));
 			if(function=="cos")v.push_back(cos(result));
 			if(function=="tan")v.push_back(tan(result));
-			if(function=="log")v.push_back(log10(result));
+			if(function=="log"){if (result<=0 ) throw(0); else {v.push_back(log10(result));}}
 			if(function=="sec")v.push_back(1.0/cos(result));
 			if(function=="csc")v.push_back(1.0/sin(result));
 			if(function=="exp")v.push_back(exp(result));
@@ -379,7 +379,7 @@ float calculate(string a)
 			if(function=="sin") v.push_back(sin(res));
 			if(function=="cos")v.push_back(cos(res));
 			if(function=="tan")v.push_back(tan(res));
-			if(function=="log")v.push_back(log10(res));
+			if(function=="log"){ if (res<=0 ) throw(0);else { v.push_back(log10(res));}}
 			if(function=="sec")v.push_back(1.0/cos(res));
 			if(function=="csc")v.push_back(1.0/sin(res));
 			if(function=="exp")v.push_back(exp(res));
@@ -457,7 +457,14 @@ float calculate(string a)
 
 int main()
 {
-	string h ="(2^1-sin(5)*exp(2))-1";
+	try
+	{
+	string h ="1-2*sin(10)/4+log(5)*2^2-2";
 	cout<<"final result is " <<calculate(h)<<endl;
 	return 0;
+	}
+	catch (int n )
+	{
+		if(n == 0 ){cout<<"log -ve or zero cant be calculated "<<endl;}
+	}
 }

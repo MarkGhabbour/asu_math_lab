@@ -1,9 +1,26 @@
-
-#include "stdafx.h"
 #include"CMatrix.h"
 #include<vector>
 vector <CMatrix> v ;
 vector <string> names;
+
+
+/////////////********** Phase 2 ********//////////
+
+vector < CVariables > variables;   /////////vector for constants created as L=sin(30) *6 L will be stored here.
+
+int check_for_var(string name_to_check )   /*function to check existance of variable like that of matrix*/
+{
+	for(int i=0; i < variables.size() ; i++ )
+	{
+		if(variables[i].name == name_to_check)
+			return i;
+	}
+	return -1;
+}
+
+
+
+/////////////****************************////////////
 
 int CMatrix::print;
 
@@ -148,7 +165,7 @@ double CMatrix::get_determinant()
 CMatrix CMatrix::operator/(CMatrix &m)
 	{
 	//	if(m.nrows!=m.ncols || this->nrows!=this->ncols) {cout<<"non-square matrix"<<endl; return;}
-		double a=m.get_determinant();
+		double a=m.get_determinant_LU();
 	//	if (a==0) {cout<<"the determinant of the matrix=0"<<endl; return;}
 		CMatrix x(m.nrows,m.ncols); int sign=1;
 		for(int i=0;i<x.nrows;i++)
@@ -156,7 +173,7 @@ CMatrix CMatrix::operator/(CMatrix &m)
 			for(int j=0;j<x.ncols;j++)
 			{
 				if(i%2 != j%2) sign=-1; else sign=1;
-				x.set_element(i,j,sign*m.get_cofactor(i,j).get_determinant());
+				x.set_element(i,j,sign*m.get_cofactor(i,j).get_determinant_LU());
 				//sign*=-1;
 			}
 		}
@@ -226,19 +243,18 @@ CMatrix CMatrix::num_div_mat(double d)
 void CMatrix::print_matrix(string name)
 	{
 		if(print==0) return;
-		double a;//dummy var for test
 		cout << name << " =" << endl;
-		for (int i = 0; i < nrows; i++)
+		for (int i = 0; i<nrows; i++)
 		{
-			for (int j = 0; j < ncols; j++)
-			{
-				a=pp_rows[i][j];
+			for (int j = 0; j<ncols; j++)
 				cout << "\t" << pp_rows[i][j];
-			}
 			cout << endl;
 		}
 	}
-CMatrix::CMatrix(int r,int c,string type) // dummy constructor to make unity matrix i made a better one in the 2nd phase
+
+////////////////////////////for the loving memory of jordan and guass/////////////////
+
+CMatrix::CMatrix(int r,int c,string type)
 {
 		nrows = r;
 		ncols = c;
@@ -251,92 +267,33 @@ CMatrix::CMatrix(int r,int c,string type) // dummy constructor to make unity mat
 			}
 		}
 }
-CMatrix::CMatrix(int r, int c, double a[][4])
-{
-	nrows = r;
-	ncols = c;
-	
-	pp_rows = new double*[r];
-	for (int i = 0; i<r; i++) pp_rows[i] = new double[c];
-	for (int i = 0; i<r; i++) {
-		for (int j = 0; j<c; j++) {
-			pp_rows[i][j] = a[i][j];
-			
-		}
-	}
-
-
-}
-
 
 CMatrix CMatrix::inv()
 {
 	CMatrix m=*this;
-	CMatrix x(m.nrows,m.ncols,"unity"); // creating a unity matrix   //this is a constructor needs to be completed i made a similar one can be removed just use it for now
-	int start = 0;
-	
+	CMatrix x(m.nrows,m.ncols,"unity");
 	for(int i=0;i<m.nrows;i++)
 	{
-		double a = m.pp_rows[i][i];  // the element in the main diagonal
-		
-
-		for (int j = 0; j < m.ncols; j++)
+		for(int j=0;j<m.ncols;j++)
 		{
-			if (a == 1) break;//if the pivot equals one we will skip the part of dividing the elements by the pivot
-			else if (a)//if the pivot is not zero
-			{
-				m.pp_rows[i][j] /= a;  // divide both the main matrix and the unity matrix by it to make the element in the main diagonal one
-				x.pp_rows[i][j] /= a;
-			}
-			else//if pivot is zero
-			{   //looping on the rows of the mat till finding a row that has a non zero element above or under the pivot
-				//then adding the 2 rows and dstn is the row that contained the zero pivot
-			  for (int k = i; k < m.nrows; k++)
-			  {
-			     if ( m.pp_rows[k][i] == 0) continue;
-					else
-					{
-						//adding the row with the non zero pivot to the sec row with the zero pivot
-						//and the dstn row is the row with the zero pivot
-						add_two_rows(i/*dstn_row*/, i/*row1*/, k/*row2*/, 1/*mult_of_a_row1*/, m/*matrix*/, x/*unity*/);
-						j--;
-						a = m.pp_rows[i][i];
-						break;
-					}
-				}
-			}
+			double a=m.pp_rows[i][i];
+			m.pp_rows[i][j]/=a;
+			x.pp_rows[i][j]/=a;
 		}
-		//at this point we have a  non zero pivot at the row i am in
 		for(int k=0;k<m.nrows;k++)
 		{
-			if(k==i) continue;//looping on rows except the row we are in
-			else
+			if(k==i) continue;
+			else 
 			{
-				double b = m.pp_rows[k][i]; 
-				//the element above or under the pivot in each row
-
-	
-				if (m.pp_rows[i][i])
-					for (int z = 0; z < m.ncols; z++)    // looping through all elements except the main diagonal
-					{
-						m.pp_rows[k][z] += -1 * b*m.pp_rows[i][z];//pprows[i][z]*b is multip of row of pivot by element under or above pivot
-						x.pp_rows[k][z] += -1 * b*x.pp_rows[i][z];
-					}
-				else
+				for(int z=0;z<m.ncols;z++)
 				{
-						throw("matrix is singular");
+					double b=m.pp_rows[k][i];
+					m.pp_rows[k][z]+=-1*b*m.pp_rows[i][z];
+					x.pp_rows[k][z]+=-1*b*x.pp_rows[i][z];
 				}
-				//at this "else" it means that we are at the last row so all elements before the pivot are zeroes
-				//also we knew that the pivot is zero
-				//then it is a singular matrix. if a row is all zeroes then it can be eliminated
-				//then the matrix is not square and we cant get its inverse
 			}
-
 		}
-		////
 	}
-	// just for printing the results for testing
-	/*
 	for(int i=0;i<m.nrows;i++)
 	{
 		for(int j=0;j<m.ncols;j++)
@@ -349,32 +306,71 @@ CMatrix CMatrix::inv()
 			cout<<x.pp_rows[i][j]<<" \t";
 		cout<<endl;
 	}
-	//return the matrix that was a unity matrix
-	*/
 	return x;
 }
 
-void add_two_rows(int dstn_row, int row1, int row2, int a_mult , CMatrix &a, CMatrix& unity)
+bool CMatrix::check_singularity()
 {
-
-	double test; //dummy var
+	int zero=0;
+	for(int i=0;i<this->nrows-1;i++)
 	{
-		for (int j = 0; j < a.ncols; j++)
+		double a=pp_rows[i+1][0]/pp_rows[i][0];
+		for(int j=1;j<this->ncols;j++)
 		{
-			a.pp_rows[dstn_row][j] = a.pp_rows[row1][j]*a_mult+ a.pp_rows[row2][j];
-			unity.pp_rows[dstn_row][j] = unity.pp_rows[row1][j] * a_mult + unity.pp_rows[row2][j];
-			test = a.pp_rows[dstn_row][j];
-
+			double b=pp_rows[i+1][j]/pp_rows[i][j];
+			if(a!=b) {break;}
+			if(j==this->ncols-1){zero=1;}
 		}
-
+		if(zero) break;
 	}
-
-
+	if(zero) return true;
+	else if(this->get_determinant_LU()==0) return true;
+	else return false;
 }
 
-
-
-
+double CMatrix::get_determinant_LU()
+{
+	CMatrix m=*this;
+	double det=1;
+	for(int i=0;i<m.nrows;i++)
+	{
+		double a=m.pp_rows[i][i];
+		if(a==0)
+		{
+			for(int x=i+1;x<m.nrows;x++)
+			{
+				int found=0;
+				if(m.pp_rows[x][i]!=0)
+				{
+					found=1;
+					a=m.pp_rows[x][i];
+					for(int y=0;y<m.ncols;y++)
+					{
+						double temp=m.pp_rows[i][y];
+						m.pp_rows[i][y]=m.pp_rows[x][y];
+						m.pp_rows[x][y]=temp;
+					}
+				}
+			if(found==1) {det*=-1; break;}
+			}
+		}
+		for(int j=i+1;j<m.nrows;j++)
+		{
+		//	a=m.pp_rows[i][i];
+			double b=m.pp_rows[j][i];
+			if(b==0) continue;
+			for(int k=0;k<m.ncols;k++)
+			{
+				double c=-b/a;
+				m.pp_rows[j][k]=m.pp_rows[j][k]+m.pp_rows[i][k]*c;
+			}
+		}
+	}
+	for(int i=0;i<m.nrows;i++) {det*=m.pp_rows[i][i];}
+//	for(int i=0;i<m.nrows;i++){for(int j=0;j<m.ncols;j++){cout<<m.pp_rows[i][j]<<"\t";}cout<<endl;}
+//	cout<<det;
+	return det;
+}
 
 //////////////////////////////////parsing////////////////////////////////////////
 int check(string name)
@@ -566,9 +562,11 @@ void  dop(string&s)
 
 		if (my_operation[1] == "/")
 		{
-			if(v[b1].get_determinant()==0) cout<<"the second matrix has determinant of zero"<<endl;
+			//if(v[b1].get_determinant()==0) cout<<"the second matrix has determinant of zero"<<endl;
+			if(v[b1].check_singularity()) {cout<<"the matrix "<<names[b1]<<" is singular."<<endl; matched=0;}
 			else if ((v[a1].nrows == v[a1].ncols) && (v[b1].nrows == v[b1].ncols) && (v[a1].nrows == v[b1].ncols))
-				op_res = v[a1] / v[b1];
+			op_res = v[a1] / v[b1];
+			//op_res = v[a1]* v[b1].inv();
 			else { cout << "unmatched dimensions of the two matrices" << endl; matched = 0; }
 		}
 
@@ -791,3 +789,188 @@ void detect_instruction(string&s)
 	if (s.find("[", 0) != -1) create_matrix(s);
 	else dop(s);
 }
+
+
+//////////////////**********************  Phase 2 starts here    *************///////////////////
+
+
+bool checkchar(char x)
+{
+	if( x=='0' || x =='1' || x=='2'||x=='3'||x=='4'||x=='5'||x=='6'||x=='7'||x=='8'||x=='9'||x=='.')
+	{
+		return true;
+	}
+	else return false;
+}
+
+CMatrix trigofmatrix (CMatrix &a , string type)
+{
+	///// this function wheather type is sqrt or sin or log or ln of matrix a then calculate it 
+	////and return result
+	return a;
+}
+
+CMatrix cal_vectors ( vector<CMatrix>renew , string op )
+{
+	CMatrix result;
+	if((op == ".*" )|| (op == "./") ||(op == ".+" )||(op == ".-" ) ) /* matrix .* matrix  OR no ./ matrix */
+	{
+		if(renew[0].type && renew[1].type )  /* matrix .- matrix */
+		{
+			if( op == ".+" ) return result ;   /* should return renew[0] .+ renew[1] */
+			else if ( op ==".-") return result ; 
+			else if ( op == ".*" ) return result ;
+			else return result;
+		}
+		else    // num .+ matrix 
+		{
+			float number = 0;
+			if(!renew[0].type) number = renew[0].pp_rows[0][0];
+			else number = renew[1].pp_rows[0][0];
+			if( op == ".*" ) return result;
+			else if(op=="./") return result ;
+			else if ( op==".+") return result;
+			else return result;
+		}
+	}
+	else  /* number+number OR matrix + matrix */
+	{
+		if(renew[0].type && renew[1].type )
+		{
+			// check + , - , * or / then perform operation on matrices
+			return result;
+		}
+		else
+		{
+			result.type=false;result.nrows=1;result.ncols=1;
+			result.pp_rows[0][0] = 1 ;  // result.pp_rows[0][0] = 2*3 or 4+5 etc
+			return result;
+		}
+	}
+}
+
+
+
+CMatrix calculatemat(string a[],int &n) //bktb fl dollar sign lma alaay 2 hashes only w afdy l hashat. bktb fl hashes lma allaey 2 dollars
+{
+	CMatrix first(0,0) ,second(0,0);
+	vector<CMatrix> hash ;
+	vector<CMatrix> ds;
+	vector<CMatrix>renew;
+	int no =0;
+	string temp="";
+	string last="";
+	bool pushhash=0;
+	while(no<n)
+	{
+		temp= a[no];
+		int length = temp.length();
+		int no_char =0 ;
+
+		if((temp[0]=='s'&&temp[1]=='i')||(temp[0]=='l'&&temp[1]=='o')||(temp[0]=='c'&&temp[1]=='o')||(temp[0]=='t'&&temp[1]=='a')
+			||(temp[0]=='e'&&temp[1]=='x')) // therefore we have log or sin or exp or cos or tan
+		{
+			string function = temp.substr(0 , 3);
+			no_char+=3;
+			char special = temp[no_char];
+			no_char++;
+			int getno = atoi(temp.substr(no_char , length - no_char).c_str());
+			if(special=='#') {renew.push_back(trigofmatrix(hash[getno] , function));}
+			else renew.push_back(trigofmatrix(ds[getno] , function));
+			no++;
+		}
+
+		else if ( temp[0]=='s' && temp[1]=='q')
+		{
+			string function = temp.substr(0 , 4);
+			no_char+=4;
+			char special = temp[no_char];no_char++;
+			int getno = atoi(temp.substr(no_char , length - no_char).c_str());
+			if(special=='#') {renew.push_back(trigofmatrix(hash[getno] , function));}
+			else renew.push_back(trigofmatrix(ds[getno] , function));
+			no++;
+		}
+		else if (temp[0]=='#'||temp[0]=='$') 
+		{
+			char special = temp[0];
+			no_char++;
+			int getno = atoi(temp.substr(no_char , length-no_char).c_str());
+			if(special=='#') renew.push_back(hash[getno]);
+			else renew.push_back(ds[getno]);
+			no++;
+		}
+		else if (checkchar(temp[0])||temp[0]=='-')    /* here we have a number so store it as 1*1 matrix */
+		{
+			CMatrix c ;
+			c.nrows=1;c.ncols=1;
+			c.type=false;
+			c.pp_rows=new double *[1];
+			c.pp_rows[0][0] = atof ( temp.c_str() ) ;
+			renew.push_back ( c );
+			no++;
+		}
+		else if ( (temp[0] >= 65 && temp[0] <= 90) || (temp[0] >= 97 && temp[0] <= 122))  /* can be no or matrix */
+		{
+			if(check_for_var(temp)!= -1) /* therefore its a no*/
+			{
+				CMatrix c ; 
+				c.nrows=1;c.ncols=1;c.pp_rows=new double*[1];
+				c.pp_rows[0][0] = variables[check_for_var(temp)].value;
+				renew.push_back(c);
+				no++;
+			}
+			else    /* therefore its a matrix */
+			{
+				renew.push_back(v[check(temp)]);
+				no++;
+			}
+		}
+		else if (temp=="$$")
+		{
+			if(renew.size()==2) /* we have an operation .* or /*/
+			{
+				hash.push_back(cal_vectors(renew , a[no-2] ));
+				renew.erase ( renew.begin() , renew.begin()+2 ) ;
+				no++;
+			}
+			else  /*  we have only one element we want to store into hash */
+			{
+				hash.push_back(renew[renew.size()-1]);
+				renew.erase(renew.begin() , renew.begin()+1 );
+				no++;
+			}
+		}
+		else if ( temp=="##")
+		{
+			 if(renew.size()==2) /* we have an operation .* or /*/
+			{
+				ds.push_back(cal_vectors(renew , a[no-2] ));
+				renew.erase ( renew.begin() , renew.begin()+2 ) ;
+				hash.erase(hash.begin() , hash.begin()+hash.size() );
+				no++;
+			}
+			 else
+			 {
+				 ds.push_back(renew[renew.size()-1]);
+				 hash.erase(hash.begin() , hash.begin()+hash.size() );
+				 no++;
+			 }
+		}
+	}	
+
+	if ( renew.size() == 2 )
+	{
+		return cal_vectors(renew , a[no-2] );
+	}
+	else
+		return renew[renew.size() - 1 ] ;
+}
+
+
+
+
+
+ 
+
+
+
