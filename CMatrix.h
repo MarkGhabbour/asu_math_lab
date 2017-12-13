@@ -15,10 +15,13 @@ private:
 	int nrows, ncols;
 	double** pp_rows;
 public:
+	friend float calculate(string a);
+	friend float domath(string&a);
+	friend float vector_cal ( vector <float> v , vector<char>signs );
+	friend float subcal(string h,int nb);
 	friend CMatrix cal_vectors ( vector<CMatrix> renew, string op );  /* phase 2 */
-	friend CMatrix calculatemat(string a[],int &n);          /* phase 2 */
+	friend CMatrix calculatemat(string a[],int n);          /* phase 2 */
 	static int  print;
-	bool get_type() ;
 	CMatrix(int r, int c);
 	CMatrix();
 	void destroy_matrix();
@@ -61,7 +64,7 @@ private:
 	string name;
 public:
 	friend int check_for_var(string name_to_check );
-	friend CMatrix calculatemat(string a[],int &n);
+	friend CMatrix calculatemat(string a[],int n);
 	friend CMatrix cal_vectors ( vector<CMatrix>renew , string op );
 };
 
