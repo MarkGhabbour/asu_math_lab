@@ -1,4 +1,5 @@
 #include"CMatrix.h"
+#include "parsing_functions_prototypes.h"
 #include<vector>
 vector <CMatrix> v ;
 vector <string> names;
