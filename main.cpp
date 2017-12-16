@@ -77,8 +77,9 @@ int main(int argc,char*argv[])
 	 }
 	 catch (int n)
 	 {
-		 if(n == 0){ cout<<"Cant calculate log -ve";}
+		 if(n==0){ cout<<"Cant calculate log -ve";}
 		 if(n==1) {cout<"<Cant calculate sqrt -ve";}
+		 if(n==2) {cout<<"tan(90) = infinity ";}
 	 }
 
 	return 0;

@@ -903,7 +903,7 @@ float domath(string&a)
 			if(function=="tan")v.push_back(tan(result));
 			if(function=="log"){if (result<=0 ) throw(0); else {v.push_back(log10(result));}}
 			if(function=="sec")v.push_back(1.0/cos(result));
-			if(function=="csc")v.push_back(1.0/sin(result));
+			if(function=="csc"){ if (result == 1.5707 ) throw (2) ; else {v.push_back(1.0/cos(res));}}
 			if(function=="exp")v.push_back(exp(result));
 			result =0;
 			last=")";
@@ -1182,7 +1182,7 @@ float calculate(string a)
 			if(function=="cos")v.push_back(cos(res));
 			if(function=="tan")v.push_back(tan(res));
 			if(function=="log"){ if (res<=0 ) throw(0);else { v.push_back(log10(res));}}
-			if(function=="sec")v.push_back(1.0/cos(res));
+			if(function=="sec"){ if (res == 1.5707 ) throw (2) ; else {v.push_back(1.0/cos(res));}}
 			if(function=="csc")v.push_back(1.0/sin(res));
 			if(function=="exp")v.push_back(exp(res));
 			result =0;
