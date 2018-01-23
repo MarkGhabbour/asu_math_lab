@@ -33,6 +33,7 @@ public:
 	CMatrix  operator+(CMatrix &m);
 	CMatrix operator-(CMatrix &m);
 	CMatrix  operator*(CMatrix &m);
+	cMatrix   operator^ (int a);
 	CMatrix  transpose();
 	CMatrix get_cofactor(int r,int c);
 	double get_determinant();

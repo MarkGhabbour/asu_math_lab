@@ -398,3 +398,76 @@ CMatrix calculate_expression(string s)
 }
 
 ///***mark_part_ended***//////
+
+
+//****function to remove spaces****///
+string detect_operan(string &s)
+{
+string m;
+
+if (s.find_first_not_of("0123456789.") == string::npos)
+return "const";
+//for matrix
+else if ((s.find('[') != string::npos)||(s.find("rand") != string::npos)||(s.find("eye") !=
+string::npos)||(s.find("ones") != string::npos)||(s.find("zeros") != string::npos))
+return "matrix";
+else
+return "temp";
+}
+
+ void remove_spaces(string&str)
+ {
+
+	 int i=0, len, j,toll;
+	 bool no3= true ;
+	len=str.length();
+	toll=str.length();
+	string s= detect_operan(str) ;
+ 	if(s=="matrix")
+		no3=false ;
+	
+	int c=0 ;
+	for(i=0;i<len;i++)
+	{
+	if(str[0]==' ')
+		{
+			c++ ;
+			str.erase(0,1) ;
+		   len--;
+		}
+	}
+	for(i=0; i<len; i++)
+	{
+		if(str[i]=='('&& s=="matrix")
+		no3=true;
+		if(str[i]==')'&& s=="matrix")
+			no3=false ;
+		if(str[i]==' '&&str[i+1]==' ')
+		{
+			
+			c++ ;
+			for(j=i; j<len; j++)
+			{
+				str[j]=str[j+1];
+			}
+		   len--;
+		    i--;
+		}
+		
+		if(str[i]==' '&&((str[i+1]=='s'&&no3==true)||(str[i+1]=='c'&&no3==true)||str[i+1]=='+'||str[i+1]=='*'||str[i+1]=='/'||str[i+1]=='l'
+			||str[i-1]=='+'||str[i+1]=='='||str[i-1]=='='||str[i-1]=='n'||str[i-1]=='c'||str[i-1]=='*'||str[i-1]=='/'||str[i-1]=='l'||(no3==true&&(str[i+1]=='-'||str[i+1]=='('||str[i-1]==')'))
+			||str[i-1]=='-'||str[i-1]=='('||str[i+1]==')'||str[i+1]=='.'||str[i+1]=='e'||str[i+1]=='t'||str[i+1]=='^'
+			||str[i-1]=='^'||str[i-1]=='g'))
+		{
+			c++ ;
+			for(j=i; j<len; j++)
+			{
+				str[j]=str[j+1];
+			}
+		len--;
+		}
+		 
+	}
+	str=str.erase(toll-c,toll) ;
+ }
+//to call this function:remove_spaces(string)

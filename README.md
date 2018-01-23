@@ -3,7 +3,7 @@ Software Engineering Project for 3rd year Computer and Systems Engineering depar
 
 
 in main there will be a function named : take_input()
-this function will take the input from the user, give this function to a function named remove_spaces()
+this function will take the input from the user, give this input to a function named remove_spaces()
 to remove any un-needed spaces in the input string.
 
  then determine if it is a matrix definition using brackets or ones or eyes or rand
