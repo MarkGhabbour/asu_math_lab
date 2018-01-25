@@ -5,13 +5,15 @@
 #include<string>
 #include<vector>
 
+
+
 using namespace std;
 
 class CMatrix
 {
 	friend class CParser;
 private:       
-	// bool type;
+	bool type;
 	
 	int nrows, ncols;
 	double** pp_rows;
@@ -65,31 +67,30 @@ public:
 	CMatrix(int r,int c,int mode,string name);  //1:zeros  2:ones  3:rand  4:eye
 	CMatrix(string h,string name);
 	  void print_mat();
+
+	static CMatrix trigofmatrix (CMatrix &a , string type);
+	static CMatrix cal_vectors ( vector<CMatrix>renew , string op );
+	static CMatrix calculatemat(string a[],int n);
+	static CMatrix calculate_expression(string s);
+	static bool checkchar(char x);
+	static int check(string name);
 };
 
 class CVariables
 {
 	friend class CParser;
+	friend class CMatrix;
 private:
 	double value;
 	string name;
 public:
-	CVariables(double value,string name)
-	{
-		this->name=name;
-		this->value=value;
-	}
-	void print_var()
-	{
-		if(CMatrix::print)
-		{
-			cout<<name<<"="<<endl;
-			cout<<"            "<<value<<endl;
-		}
-	}
-
+	CVariables(double value,string name);
+	void print_var();
+static	int check_for_var(string name_to_check );   /*function to check existance of variable like that of matrix*/
 	
 };
+
+
 
 
 #endif
