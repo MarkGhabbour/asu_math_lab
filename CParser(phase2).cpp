@@ -2,6 +2,7 @@
 #include"CParser.h"
 
 
+
 void CParser::take_input()
 {
 	while(1)
@@ -99,7 +100,7 @@ void CParser::take_input()
 				if(!matrix_operation)
 				{
 					string var_name="ans";
-					CVariables a(calculate(input),var_name);
+					CVariables a(calculate(input , First),var_name);
 					vars.push_back(a);
 					vars[vars.size()-1].print_var();
 				}
@@ -210,7 +211,7 @@ void CParser::take_input()
 						{
 							var_name+=input[i];
 						}
-					CVariables a(calculate(var_to_be_calculated),var_name);
+					CVariables a(calculate(var_to_be_calculated , First),var_name);
 					vars.push_back(a);
 					vars[vars.size()-1].print_var();
 				}
@@ -636,6 +637,7 @@ return "temp";
  }
 
 
+ /*
 
 
  float CParser::domath(string&a)
@@ -738,6 +740,8 @@ l1:	if(n1 != "")
 	return vector_cal ( v , signs );
 }
 
+*/
+
 float CParser::vector_cal ( vector <float> v , vector<char>signs )
 {
 	float result = 0;
@@ -827,16 +831,11 @@ float CParser::vector_cal ( vector <float> v , vector<char>signs )
 
 
 
-
-
-
-
-
-float CParser::subcal(string h,int nb)
+float CParser:: subcal(string h,int nb)
 {
 	//cout<<nb<<endl;
 	if(nb==0)
-		return domath(h);
+		return calculate(h , Other); // modified instead of domath(h)
 	else
 	{
 		float result;
@@ -875,10 +874,10 @@ float CParser::subcal(string h,int nb)
 				break;
 			}
 		}
-		 h=h.replace(pos[i],d-pos[i]+1,to_string(domath(part)));
+		h=h.replace(pos[i],d-pos[i]+1,to_string(calculate(part , Other)));
 		cout<<"my favourite part is "<<h<<endl;
 		if(h.find('(',0)==-1)
-			return domath(h);
+			return calculate(h , Other);   //modified instead of domath(h)
 		else
 		{
 			int l=0, count2=0;
@@ -901,7 +900,12 @@ float CParser::subcal(string h,int nb)
 
 
 
-float CParser::calculate(string a)
+
+
+
+
+
+float CParser::calculate(string a , enum NoCalling detector)
 {
 	string w="";int no_of_char=0;string last;string mod;unsigned int coo=0;
 	int length = a.length();vector<float> v;vector<char>signs;float result=0;
@@ -957,6 +961,11 @@ float CParser::calculate(string a)
 			(a[no_of_char] == 's'&&a[no_of_char+1]=='e'&&a[no_of_char+2]=='c')||(a[no_of_char] == 'c'&&a[no_of_char+1]=='s'&&a[no_of_char+2]=='c') 
 			||(a[no_of_char] == 'e'&&a[no_of_char+1]=='x'&&a[no_of_char+2]=='p'))
 		{
+
+			if ( detector == 0)
+
+			{
+
 			if(result!=0&&last==")")
 			{
 				v.push_back(result);
@@ -979,32 +988,60 @@ float CParser::calculate(string a)
 			no_of_char++;
 			int noopen=1;
 			int noclosed=0 ;
-			while(1)
+			bool is_error = true;
+			while(no_of_char < a.length())
 			{
 				w+=a[no_of_char];
 				if(a[no_of_char]=='(')noopen++;
 				if(a[no_of_char]==')')noclosed++;
-				if(noopen==noclosed)break;
+				if(noopen==noclosed) {is_error=false;break;}
 				else 
 				{
 					no_of_char++;
 					continue;
 				}
 			}
+			if(is_error) throw(3) ;
 			int end = no_of_char;
 			w=w.erase(0,1);w=w.erase(w.length()-1,1);
 			float res = subcal(w,noopen-1);
 			w="";
 			if(function=="sin") v.push_back(sin(res));
 			if(function=="cos")v.push_back(cos(res));
-			if(function=="tan")v.push_back(tan(res));
+			if(function=="tan") if(res==1.5708) throw(1) ; else v.push_back(tan(res));
 			if(function=="log"){ if (res<=0 ) throw(0);else { v.push_back(log10(res));}}
-			if(function=="sec"){ if (res == 1.5707 ) throw (2) ; else {v.push_back(1.0/cos(res));}}
+			if(function=="sec")v.push_back(1.0/cos(res));
 			if(function=="csc")v.push_back(1.0/sin(res));
 			if(function=="exp")v.push_back(exp(res));
 			result =0;
 			last = ")";
 			no_of_char=end+1;
+		}
+		else
+		{
+			bool flag=0;
+			string function="";
+			function += a[no_of_char];
+			function+=a[no_of_char+1];
+			function+=a[no_of_char+2];
+			no_of_char = no_of_char +3;
+			while((CMatrix::checkchar(a[no_of_char])||(a[no_of_char]=='-'&&w==""))&&no_of_char < length)
+					{
+						w+=a[no_of_char];
+						no_of_char++;
+					}
+			result = atof(w.c_str());
+			w="";
+			if(function=="sin") v.push_back(sin(result));
+			if(function=="cos")v.push_back(cos(result));
+			if(function=="tan")v.push_back(tan(result));
+			if(function=="log"){if (result<=0 ) throw(0); else {v.push_back(log10(result));}}
+			if(function=="sec")v.push_back(1.0/cos(result));
+			if(function=="csc")v.push_back(1.0/sin(result));
+			if(function=="exp")v.push_back(exp(result));
+			result =0;
+			last=")";
+		}
 		}
 
 		else if ( a[no_of_char]=='s' && a[no_of_char+1]=='q')
@@ -1015,23 +1052,25 @@ float CParser::calculate(string a)
 			no_of_char++;
 			int noopen=1;
 			int noclosed=0 ;
-			while(1)
+			bool is_error = true;
+			while(no_of_char < a.length())
 			{
 				w+=a[no_of_char];
 				if(a[no_of_char]=='(')noopen++;
 				if(a[no_of_char]==')')noclosed++;
-				if(noopen==noclosed)break;
+				if(noopen==noclosed){is_error = false;break;}
 				else 
 				{
 					no_of_char++;
 					continue;
 				}
 			}
+			if(is_error) throw(3);
 			int end = no_of_char;
 			w=w.erase(0,1);w=w.erase(w.length()-1,1);
 			float res = subcal(w,noopen-1);
 			w="";
-			if (res < 0) throw (1) ;
+			if (res < 0) throw (2) ;
 			else v.push_back(sqrt(res));
 			result =0;
 			last = ")";
@@ -1053,18 +1092,20 @@ float CParser::calculate(string a)
 			no_of_char++;
 			int noopen=1;
 			int noclosed=0 ;
-			while(1)
+			bool is_error = true ;
+			while(no_of_char < a.length())
 			{
 				w+=a[no_of_char];
 				if(a[no_of_char]=='(')noopen++;
 				if(a[no_of_char]==')')noclosed++;
-				if(noopen==noclosed)break;
+				if(noopen==noclosed) {is_error= false; break;}
 				else 
 				{
 					no_of_char++;
 					continue;
 				}
 			}
+			if(is_error) throw(3) ; 
 			int end = no_of_char;
 			cout<<noclosed<<"       "<<noopen<<" "<<w<<endl;
 			w=w.erase(0,1);w=w.erase(w.length()-1,1);

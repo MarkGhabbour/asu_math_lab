@@ -174,7 +174,7 @@ double CMatrix::get_determinant()
 		{
 			values+=m*pp_rows[0][i]*get_cofactor(0,i).get_determinant();
 			m*=-1;
-		}
+ 		}
 		return values;
 	}
 

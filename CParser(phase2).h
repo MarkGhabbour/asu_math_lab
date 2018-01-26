@@ -24,11 +24,13 @@ public:
 	static string  handle_priorities(string  &s);
 	static  void remove_spaces(string&str);
 	static string detect_operan(string &s);
-	static float domath(string&a);
+	//static float domath(string&a);
 	static float vector_cal ( vector <float> v , vector<char>signs );
 	static float subcal(string h,int nb);
-	static float calculate(string a);
+	static float calculate(string a , enum NoCalling detector);
 };
+
+enum NoCalling { First , Other };
 
 
 #endif

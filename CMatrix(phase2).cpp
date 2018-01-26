@@ -70,6 +70,34 @@ CMatrix& CMatrix::operator=(const CMatrix& m)
 		return *this;
 	}
 
+CMatrix CMatrix::partial_mul(CMatrix &m)
+{
+	CMatrix x(this->nrows,this->ncols);
+	x.type=true;
+	for(int i=0;i<x.nrows;i++)
+	{
+		for(int j=0;j<x.ncols;j++)
+		{
+			x.set_element(i,j,this->pp_rows[i][j]*m.pp_rows[i][j]);
+		}
+	}
+	return x;
+}
+
+CMatrix CMatrix::partial_div(CMatrix &m)
+{
+	CMatrix x(this->nrows,this->ncols);
+	x.type=true;
+	for(int i=0;i<x.nrows;i++)
+	{
+		for(int j=0;j<x.ncols;j++)
+		{
+			x.set_element(i,j,this->pp_rows[i][j]/m.pp_rows[i][j]);
+		}
+	}
+	return x;
+}
+
 CMatrix CMatrix::operator+(CMatrix &m) 
 	{
 		CMatrix c(nrows, ncols);
@@ -409,7 +437,7 @@ CMatrix::CMatrix(string h,string name)
 			  {
 				  if(el.find_first_of(operations.c_str())!=string::npos || (el.rfind('-')>0))
 				  {
-					  pp_rows[r][c]=CParser::calculate(el);
+					  pp_rows[r][c]=CParser::calculate(el , First);
 				  }
 				  else pp_rows[r][c]=atof(el.c_str());
 				  c++;
@@ -419,7 +447,7 @@ CMatrix::CMatrix(string h,string name)
 			  {
 				 if(el.find_first_of(operations.c_str())!=string::npos || (el.rfind('-')>0))
 				  {
-					  pp_rows[r][c]=CParser::calculate(el);
+					  pp_rows[r][c]=CParser::calculate(el , First);
 				  }
 				  else pp_rows[r][c]=atof(el.c_str());
 				 c=0; 
@@ -468,22 +496,26 @@ CMatrix::CMatrix(string h,string name)
 			 }
 			 else if(type=="tan")
 			 {
+				 if(a.pp_rows[i][j]==1.5708) throw(2); // tan (90) 
 				 m.set_element(i,j,tan(a.pp_rows[i][j]));
 			 }
 			 else if(type=="exp")
 			 {
 				 m.set_element(i,j,exp(a.pp_rows[i][j]));
 			 }
-			 else if(type=="log")
+			 else if(type=="log")  
 			 {
+				 if(a.pp_rows[i][j]<=0) throw(1) ; //log(0) or log(neg num)
 				 m.set_element(i,j,log10(a.pp_rows[i][j]));
 			 }
 			 else if(type=="ln")
 			 {
+				 if(a.pp_rows[i][j]<=0) throw(1) ;
 				 m.set_element(i,j,log(a.pp_rows[i][j]));
 			 }
 			 else if(type=="sqrt")
 			 {
+				 if(a.pp_rows[i][j]<0) throw 
 				 m.set_element(i,j,sqrt(a.pp_rows[i][j]));
 			 }
 		 }
@@ -498,10 +530,10 @@ CMatrix::CMatrix(string h,string name)
 	{
 		if(renew[0].type==true && renew[1].type ==true)  /* matrix .- matrix */
 		{
-			if( op == ".+" ) return result ;   /* should return renew[0] .+ renew[1] */
-			else if ( op ==".-") return result ; 
-			else if ( op == ".*" ) return result ;
-			else return result;
+			if( op == ".+" ) return renew[0]+renew[1] ;   /* should return renew[0] .+ renew[1] */
+			else if ( op ==".-") return renew[0]-renew[1] ; 
+			else if ( op == ".*" ) return renew[0].partial_mul(renew[1]) ;      // should return renew[0].partial_mul(renew[1])
+			else return renew[0].partial_div(renew[1]);                         // should return renew[0].partial_div(renew[1])
 		}
 		else    // num .+ matrix 
 		{
@@ -509,18 +541,20 @@ CMatrix::CMatrix(string h,string name)
 			if(!renew[0].type) {number = renew[0].pp_rows[0][0];result = renew[1];}
 			else{ number = renew[1].pp_rows[0][0]; result = renew[0];}
 			if( op == ".*" ) return result*number ;
-			else if(op=="./"){ if(!renew[0].type) return result.num_div_mat(number); } 
+			else if(op=="./") return result.num_div_mat(number);  
 			else if ( op==".+") return result + number;
-			else { if(renew[0].type){return result - number;} else return result - (-1*number);}
+			else return result - number;
 		}
 	}
 	else  /* number+number OR matrix + matrix */
 	{
 		if(renew[0].type && renew[1].type )  /* matrix + matrix */
 		{
-			if(op=="+") return renew[0] + renew[1];
-			else if (op == "-") return renew[0] - renew[1];
+			if(op=="+"||op==".+") return renew[0] + renew[1];
+			else if (op == "-"||op==".-") return renew[0] - renew[1];
 			else if (op == "*") return renew[0] * renew[1];
+			else if (op==".*") return renew[0].partial_mul(renew[1]) ; // should return renew[0].partial_mul(renew[1])
+			else if (op=="./") return renew[0].partial_div(renew[1]) ; // should return renew[0].partial_div(renew[1])
 			else return renew[0]/renew[1];
 		}
 		else /* number + number */
@@ -583,7 +617,7 @@ CMatrix::CMatrix(string h,string name)
 			else renew.push_back(ds[getno]);
 			no++;
 		}
-		else if(temp==".+" || temp==".-" ||temp==".*" ||temp=="./") {no++;continue;}
+		else if(temp==".+" || temp==".-" ||temp==".*" ||temp=="./"||temp=="+"||temp=="-"||temp=="*"||temp=="/") {no++;continue;}
 		else if (checkchar(temp[0])||temp[0]=='-')    /* here we have a number so store it as 1*1 matrix */
 		{
 			CMatrix c ;

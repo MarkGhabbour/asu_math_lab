@@ -46,6 +46,8 @@ public:
 	CMatrix operator+(double d);
 	CMatrix operator-(double d);
 	CMatrix operator-();
+	CMatrix partial_mul(CMatrix&m);
+	CMatrix partial_div(CMatrix&m);
 
 
 	//another functions:
