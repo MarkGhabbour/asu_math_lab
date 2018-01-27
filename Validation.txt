@@ -30,7 +30,8 @@ Testing of the project using Dr.Mohamed examples
 5) big Example
    NOT TESTED YET
 
-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------   Testing of multiplication of matrix by itself ==> a^100
+----------------------------------------------------------------------------------------------------------------------------------------    Testing of multiplication of matrix by itself ==> a^100
+
 a) a=[1 2;-0.5 -4]; a^100
     --> run time error, right answer=  
       1.0e+57 *
