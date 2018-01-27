@@ -518,9 +518,9 @@ string CParser:: handle_priorities(string  &s)
 {
 	//just creating arrays containing the operations to be used
 	//op0 operators have higher priority than op1 operators..
-	string op0[7];
+	string op0[9];
 	op0[0] = "sin"; op0[1] = "cos"; op0[2] = "log"; op0[3] = "ln"; op0[4] = "sqrt";
-	op0[5] = "^"; op0[6] = "'";
+	op0[5] = "^"; op0[6] = "'"; op0[7]="det"; op0[8]="inv";
 	string op1[3];
 	op1[0] = "*"; op1[1] = "/"; op1[2] = "%";
 	string op2[2];
