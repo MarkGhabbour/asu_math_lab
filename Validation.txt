@@ -1,17 +1,33 @@
-1) Tricky 
-      a) wrong answer, also definitin of a variable fails
-      b) right answer
-      c) runtime error
+1) Advanced example
+      a) A ->wrong answer A =33.5 not 12  (martin)
+      b) B-> right
+      c) C-> right, only comment the part showing "my favourite part" (martin)
+     d) X & Y both gave run time errors (mark , martin)
+     e) G-> printed in a wrong way	
+     F) D,E,F, L -> right answers		
+2) Errors example
+  a) A=[1 2; 3] -> it was treated as A=[1 2;3 0] also it is a wrong input (fady farag)
+ b) B= 5/0 -> answer was 1.#inf, right answer should be Inf (martin)
+ c) C = 3 * (2 + 4 + -> right answer
 
-2) Advanced Example
-  a) right
- b) right
- c) no-response
- d) right
- e) right 
- f)right 
- g)right 
- h)right
- e) error, but line also gave an error on matlab
+3) Example.m
+ a) we should handle the case of defining more than one matrix in a line separated by a comma (farag)
+ b) D= A-B -> gave wrong answer (mark, martin)
+ c) E -> right
+ d) H=C' -> wrong answer, it gave a zero result 
+e)  G -> right answer but printintg martix numbers is not alligned, also the precision is not the same for all numbers       in printing, and handle negative signs (farag)
+f) F=A/B -> right answer  but ther is a mistaked in alligning of numbers while printing (farag) 
+
+4) Tricky example
+  a) A-> wrong answer, it gave a zero result instead of 3608.9
+  b) rest is right
+ 
+5) big Example
+   NOT TESTED YET
+
+
+
+
+
 
 
