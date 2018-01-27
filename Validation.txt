@@ -1,3 +1,7 @@
+
+Testing of the project using Dr.Mohamed examples
+
+
 1) Advanced example
       a) A ->wrong answer A =33.5 not 12  (martin)
       b) B-> right
