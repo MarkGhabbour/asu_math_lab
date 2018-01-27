@@ -2,50 +2,125 @@
 #include"CParser.h"
 
 
-
 void CParser::take_input()
 {
-	while(1)
-	{
-		 CMatrix::print=1;	//this is the static variable of the class CMatrix::print
-		int open_brakets=0,closed_brakets=0,equal_sign=0;
+    while(1)
+    {
+    int open_brakets=0,closed_brakets=0,open_circle=0,closed_circle=0;
 		string input="";
 		int activate_enter=0;
 		do
 		{
 			
 			string h;
-			getline(cin,h);
+		getline(cin,h);
+		if(h=="exit") return;
+			for(int i=0;i<h.length();i++)
+				{
+					if(h[i]=='[') open_brakets++;
+					else if(h[i]== ']') closed_brakets++;
+					else if(h[i]== '(') open_circle++;
+					else if(h[i]== ')') closed_circle++;
+				}
+			
+			if(closed_circle!= open_circle)
+			{
+				throw("syntax error");
+			}
+				
 			if(activate_enter)
 			{
-				h+=13;
+				if(h[h.length()-1]!=';' && (open_brakets != closed_brakets))
+				    h+=';';
 			}
 			if(h.find('[')!=-1 &&(!activate_enter))
 			{
 				activate_enter=1;
-				h+=13;
+				if(h[h.length()-1]!=';' && (open_brakets != closed_brakets))
+				    h+=';';
 			}
-			input+=h;   //should fix the newline problem
+			input+=h;
+				
+		}
+		while(open_brakets != closed_brakets);
 
+
+		//remove spaces
+		//remove_spaces(input);
+		input=m_remove_spaces(input);
+		//detect the input
+		detect_input(input);
+		
+    }
+}
+
+
+void CParser::take_input_file(char* file_path)
+{
+	ifstream file(file_path);
+	string h;
+	while(getline(file,h))
+    {
+    int open_brakets=0,closed_brakets=0,open_circle=0,closed_circle=0;
+		string input="";
+		int activate_enter=0;
+		do
+		{
+		if(h=="exit") return;
 			for(int i=0;i<h.length();i++)
 				{
-					if(h[i]=='(' || h[i]=='[') open_brakets++;
-					else if(h[i]==')' || h[i]== ']') closed_brakets++;
-					else if(h[i]=='=') equal_sign++;
+					if(h[i]=='[') open_brakets++;
+					else if(h[i]== ']') closed_brakets++;
+					else if(h[i]== '(') open_circle++;
+					else if(h[i]== ')') closed_circle++;
 				}
+			
+			if(closed_circle!= open_circle)
+			{
+				throw("syntax error");
+			}
+				
+			if(activate_enter)
+			{
+				if(h[h.length()-1]!=';' && (open_brakets != closed_brakets))
+				    h+=';';
+			}
+			if(h.find('[')!=-1 &&(!activate_enter))
+			{
+				activate_enter=1;
+				if(h[h.length()-1]!=';' && (open_brakets != closed_brakets))
+				    h+=';';
+			}
+			input+=h;
+				
 		}
-		while(open_brakets != closed_brakets); 
+		while(open_brakets != closed_brakets);
 
-		//testing the input
-		//cout<<input<<endl;
 
-		//remove spaces from the input
+		//remove spaces
+		//remove_spaces(input);
+		input=m_remove_spaces(input);
+		//detect the input
+		detect_input(input);
+		
+    }
+}
 
-		//storing the names of variables or matrices
 
-		if(input[input.length()-1]==';') CMatrix::print=0;
+void CParser::detect_input(string input)
+{
+	int equal_sign=0;
+	for(int i=0;i<input.length();i++)
+	{
+		if(input[i]=='=')
+			equal_sign++;
+	}
 
-		if(equal_sign==0) 
+	CMatrix::print=1;	//this is the static variable of the class CMatrix::print
+
+	if(input[input.length()-1]==';') CMatrix::print=0;
+
+	if(equal_sign==0) 
 		{
 			//so it's not an operation it's just printing the value of the operation in a temp value named as ans
 			//first check if there's an operation to make before printing the value
@@ -77,7 +152,7 @@ void CParser::take_input()
 				}
 				if(variable_found==0)          // error handling
 				{
-					cout<<"Unidentified Variable"<<endl;
+					throw("Unidentified Variable");
 				}
 			}
 			else
@@ -92,17 +167,56 @@ void CParser::take_input()
 						CMatrix a=CMatrix::calculate_expression(input);
 						string mat_name="ans";
 						a.name=mat_name;
+						//to check if there's any other matrix with the same name to overwrite it
+						int mat_pos=-1;
+						for(int i=0;i<mats.size();i++)
+						{
+							if(mats[i].name==mat_name)
+							{
+								mat_pos=i;
+								break;
+							}
+						}
+						if(mat_pos==-1)
+						{
 						mats.push_back(a);
 						mats[mats.size()-1].print_mat();
+						}
+						else 
+							{
+								mats[mat_pos]=a;
+								a.print_mat();
+							}
+						//check ended
+
 						break;
 					}
 				}
 				if(!matrix_operation)
 				{
 					string var_name="ans";
-					CVariables a(calculate(input , First),var_name);
-					vars.push_back(a);
-					vars[vars.size()-1].print_var();
+					CVariables a(calculate(input, First),var_name);
+					//to check if there's any other variable with the same name to overwrite it
+					int var_pos=-1;
+					for(int i=0;i<vars.size();i++)
+					{
+						if(vars[i].name==var_name)
+						{
+							var_pos=i;
+							break;
+						}
+					}
+					if(var_pos!=-1)
+					{
+						vars[var_pos].value=a.value;
+						vars[var_pos].print_var();
+					}
+					else
+						{
+							vars.push_back(a);
+							vars[vars.size()-1].print_var();
+						}
+					//check ended
 				}
 			}
 
@@ -121,29 +235,110 @@ void CParser::take_input()
 			{
 				//make a random matrix
 				//use the constructor by giving it nR,nC and the random mode
-				mats.push_back(CMatrix(nR,nC,3,mat_name));
-				mats[mats.size()-1].print_mat();
+				CMatrix a(nR,nC,3,mat_name);
+
+				//to check if there's any other matrix with the same name to overwrite it
+						int mat_pos=-1;
+						for(int i=0;i<mats.size();i++)
+						{
+							if(mats[i].name==mat_name)
+							{
+								mat_pos=i;
+								break;
+							}
+						}
+						if(mat_pos==-1)
+						{
+						mats.push_back(a);
+						mats[mats.size()-1].print_mat();
+						}
+						else 
+							{
+								mats[mat_pos]=a;
+								a.print_mat();
+							}
+						//check ended
 			}
 			if(input.find("eye")!=-1)
 			{
 				//make a unity matrix
 				//use the constructor by giving it nR,nC and the unity mode
-				mats.push_back(CMatrix(nR,nC,4,mat_name));
-				mats[mats.size()-1].print_mat();
+				CMatrix a(nR,nC,4,mat_name);
+				//to check if there's any other matrix with the same name to overwrite it
+						int mat_pos=-1;
+						for(int i=0;i<mats.size();i++)
+						{
+							if(mats[i].name==mat_name)
+							{
+								mat_pos=i;
+								break;
+							}
+						}
+						if(mat_pos==-1)
+						{
+						mats.push_back(a);
+						mats[mats.size()-1].print_mat();
+						}
+						else 
+							{
+								mats[mat_pos]=a;
+								a.print_mat();
+							}
+						//check ended
 			}
 			if(input.find("zeros")!=-1)
 			{
 				//make a zero matrix
 				//use the constructor by giving it nR,nC and the zero mode
-				mats.push_back(CMatrix(nR,nC,1,mat_name));
-				mats[mats.size()-1].print_mat();
+				CMatrix a(nR,nC,1,mat_name);
+				//to check if there's any other matrix with the same name to overwrite it
+						int mat_pos=-1;
+						for(int i=0;i<mats.size();i++)
+						{
+							if(mats[i].name==mat_name)
+							{
+								mat_pos=i;
+								break;
+							}
+						}
+						if(mat_pos==-1)
+						{
+						mats.push_back(a);
+						mats[mats.size()-1].print_mat();
+						}
+						else 
+							{
+								mats[mat_pos]=a;
+								a.print_mat();
+							}
+						//check ended
 			}
 			if(input.find("ones")!=-1)
 			{
 				//make a one matrix
 				//use the constructor by giving it nR,nC and the one mode
-				mats.push_back(CMatrix(nR,nC,2,mat_name));
-				mats[mats.size()-1].print_mat();
+				CMatrix a(nR,nC,2,mat_name);
+				//to check if there's any other matrix with the same name to overwrite it
+						int mat_pos=-1;
+						for(int i=0;i<mats.size();i++)
+						{
+							if(mats[i].name==mat_name)
+							{
+								mat_pos=i;
+								break;
+							}
+						}
+						if(mat_pos==-1)
+						{
+						mats.push_back(a);
+						mats[mats.size()-1].print_mat();
+						}
+						else 
+							{
+								mats[mat_pos]=a;
+								a.print_mat();
+							}
+						//check ended
 			}
 
 		}
@@ -158,8 +353,29 @@ void CParser::take_input()
 			int begin=input.find("[");
 			int end=input.rfind("]");
 			string mat_string=create_mat(input.substr(begin+1,end-begin-1),1);
-			mats.push_back(CMatrix(mat_string,mat_name));
-			mats[mats.size()-1].print_mat();
+			CMatrix a(mat_string,mat_name);
+			//to check if there's any other matrix with the same name to overwrite it
+						int mat_pos=-1;
+						for(int i=0;i<mats.size();i++)
+						{
+							if(mats[i].name==mat_name)
+							{
+								mat_pos=i;
+								break;
+							}
+						}
+						if(mat_pos==-1)
+						{
+						mats.push_back(a);
+						mats[mats.size()-1].print_mat();
+						}
+						else 
+							{
+								mats[mat_pos]=a;
+								mats[mat_pos].name=mat_name;
+								a.print_mat();
+							}
+						//check ended
 		}
 		else
 		{
@@ -179,8 +395,28 @@ void CParser::take_input()
 					var_name+=input[i];
 				}
 				double var_value=atof(input.substr(i+1).c_str());
-					vars.push_back(CVariables(var_value,var_name));
-					vars[vars.size()-1].print_var();
+					CVariables a(var_value,var_name);
+					//to check if there's any other variable with the same name to overwrite it
+					int var_pos=-1;
+					for(int i=0;i<vars.size();i++)
+					{
+						if(vars[i].name==var_name)
+						{
+							var_pos=i;
+							break;
+						}
+					}
+					if(var_pos!=-1)
+					{
+						vars[var_pos].value=a.value;
+						vars[var_pos].print_var();
+					}
+					else
+						{
+							vars.push_back(a);
+							vars[vars.size()-1].print_var();
+						}
+					//check ended
 			}
 			else 
 			{
@@ -198,8 +434,27 @@ void CParser::take_input()
 							mat_name+=input[i];
 						}
 						a.name=mat_name;
+						//to check if there's any other matrix with the same name to overwrite it
+						int mat_pos=-1;
+						for(int i=0;i<mats.size();i++)
+						{
+							if(mats[i].name==mat_name)
+							{
+								mat_pos=i;
+								break;
+							}
+						}
+						if(mat_pos==-1)
+						{
 						mats.push_back(a);
 						mats[mats.size()-1].print_mat();
+						}
+						else 
+							{
+								mats[mat_pos]=a;
+								a.print_mat();
+							}
+						//check ended
 						break;
 					}
 				}
@@ -211,15 +466,32 @@ void CParser::take_input()
 						{
 							var_name+=input[i];
 						}
-					CVariables a(calculate(var_to_be_calculated , First),var_name);
-					vars.push_back(a);
-					vars[vars.size()-1].print_var();
+					CVariables a(calculate(var_to_be_calculated, First),var_name);
+					//to check if there's any other variable with the same name to overwrite it
+					int var_pos=-1;
+					for(int i=0;i<vars.size();i++)
+					{
+						if(vars[i].name==var_name)
+						{
+							var_pos=i;
+							break;
+						}
+					}
+					if(var_pos!=-1)
+					{
+						vars[var_pos].value=a.value;
+						vars[var_pos].print_var();
+					}
+					else
+						{
+							vars.push_back(a);
+							vars[vars.size()-1].print_var();
+						}
+					//check ended
 				}
 			}
 		}
-	}
 }
-
 
 string CParser::concat(CMatrix A,CMatrix B)
 {
@@ -566,6 +838,86 @@ string CParser:: handle_priorities(string  &s)
 	return o;
 }
 
+
+string CParser::m_remove_spaces(string s)
+{
+	 int flag=0;
+	
+
+	if(s.find('[')==-1)
+	{
+		for(int i=0; i<s.length();i++)
+		{
+			if(s[i]==' ')
+			{s.erase(i,1); i--;}
+
+		}
+		return s;
+	}
+
+
+	for(int i=1; i<s.length()-1;i++)
+	{
+		//looping on all string chars, if there is 2 spaces after each other remove one of them
+		//check if [ ( have space after them then remove the space
+		//check if ] ) have space after them then remove the space
+		//loop from 1 to length-1 so i+1 and i-1 do not give runtime errors
+
+		if(s[i]==' ' && s[i+1] ==' ')
+		{ s.erase(i,1); i--; }
+		else if ( (s[i-1]=='[' || s[i-1]=='(') && s[i]==' ')
+		{ s.erase(i,1);  }
+		else if ( (s[i+1]==']' || s[i+1]==')') && s[i]==' ')
+		{ s.erase(i,1);  }
+	}
+	//handling s[0] s[1] and s[length-1]
+
+	if(s[0]==' ') { s.erase(0,1); flag=-1;} 
+	if(s[1+flag]==' ') s.erase(1+flag,1); 
+	if(s[s.length()-1]==' ') s.erase(s.length()-1,1); 
+
+	;
+	int open_brac=0, closed_brac=0;
+	flag=0;
+	
+	//at this point our string contains spaces with maximum one space (not more than one space at a time)
+	//now we remove unnecessary spaces
+	//checking operators and removing unnecessary spaces before and after them
+
+
+
+	for(int i=1; i<s.length()-1; i++)
+	{
+		if(s[i]=='(')	   open_brac++;
+		else if(s[i]==')') closed_brac++;
+		
+		if( (open_brac>closed_brac) && (open_brac != 0) )
+		{
+			if(s[i]==' ')
+			{s.erase(i,1); i--;}
+			continue;
+		}
+		if(s[i]=='=' || s[i]==';' || s[i]==',' || s[i]=='.'||
+			s[i]=='^' ||s[i]=='/' ||s[i]=='*' ||s[i]=='\'')
+			{
+				if(s[i-1]==' ')		 { s.erase(i-1,1); i--;  }
+				if(s[i+1]==' ')		 { s.erase(i+1,1); i--;	 }
+				
+				
+		    }	
+	}
+	char q= s[s.length()-1];
+	    if(q=='=' || q==';' || q==',' || q=='.'||
+		   q=='^' ||q=='/' || q=='*'  || q=='\''  || 
+		   q=='-' || q=='+')
+	
+	  {  if(s[s.length()-2]==' ')  s.erase(s.length()-2,1);      }
+
+
+	return s;
+}
+
+
 string CParser::detect_operan(string &s)
 {
 string m;
@@ -622,7 +974,8 @@ return "temp";
 		if(str[i]==' '&&((str[i+1]=='s'&&no3==true)||(str[i+1]=='c'&&no3==true)||str[i+1]=='+'||str[i+1]=='*'||str[i+1]=='/'||str[i+1]=='l'
 			||str[i-1]=='+'||str[i+1]=='='||str[i-1]=='='||str[i-1]=='n'||str[i-1]=='c'||str[i-1]=='*'||str[i-1]=='/'||str[i-1]=='l'||(no3==true&&(str[i+1]=='-'||str[i+1]=='('||str[i-1]==')'))
 			||str[i-1]=='-'||str[i-1]=='('||str[i+1]==')'||str[i+1]=='.'||str[i+1]=='e'||str[i+1]=='t'||str[i+1]=='^'
-			||str[i-1]=='^'||str[i-1]=='g'))
+			||str[i-1]=='^'||str[i-1]=='g'||str[i-1]=='['||str[i+1]==']'
+			||str[i-1]=='x'||str[i+1]=='x'||str[i-1]=='y'||str[i+1]=='y'||str[i-1]=='z'||str[i+1]=='z'||str[i-1]==';'||str[i+1]==';'))
 		{
 			c++ ;
 			for(j=i; j<len; j++)
@@ -637,9 +990,7 @@ return "temp";
  }
 
 
- /*
-
-
+/*
  float CParser::domath(string&a)
 {
 	string n1 = ""; float result=0;
@@ -739,9 +1090,7 @@ l1:	if(n1 != "")
 
 	return vector_cal ( v , signs );
 }
-
 */
-
 float CParser::vector_cal ( vector <float> v , vector<char>signs )
 {
 	float result = 0;
@@ -831,7 +1180,12 @@ float CParser::vector_cal ( vector <float> v , vector<char>signs )
 
 
 
-float CParser:: subcal(string h,int nb)
+
+
+
+
+
+float CParser::subcal(string h,int nb)
 {
 	//cout<<nb<<endl;
 	if(nb==0)
@@ -896,11 +1250,6 @@ float CParser:: subcal(string h,int nb)
 		return result;
 	}
 }
-
-
-
-
-
 
 
 

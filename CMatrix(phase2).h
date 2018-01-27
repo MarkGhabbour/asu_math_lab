@@ -4,8 +4,7 @@
 #include<iostream>
 #include<string>
 #include<vector>
-
-
+#include<fstream>
 
 using namespace std;
 
@@ -46,8 +45,10 @@ public:
 	CMatrix operator+(double d);
 	CMatrix operator-(double d);
 	CMatrix operator-();
-	CMatrix partial_mul(CMatrix&m);
-	CMatrix partial_div(CMatrix&m);
+
+
+	
+
 
 
 	//another functions:
@@ -58,6 +59,8 @@ public:
 	CMatrix num_sub_mat(double d);
 	CMatrix num_div_mat(double d);
 	CMatrix mat_pow_num(double d);
+	CMatrix partial_mul(CMatrix&m);
+	CMatrix partial_div(CMatrix&m);
 	void print_matrix(string name);
 	bool check_singularity();
 	CMatrix(int r,int c,string type);  //constructor to be used by determinant function

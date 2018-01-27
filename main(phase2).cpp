@@ -2,18 +2,18 @@
 #include"CParser.h"
 
 
-int main()
+int main(int argc,char argv[])
 {
-	try
-	{
-		CParser::take_input();
+	try{
+		if(argc==1)
+			CParser::take_input();
+		else if(argc==2)
+			CParser::take_input_file(argv);
+
 	}
-	catch(int n)
+	catch(char* error)
 	{
-		if(n==0) cout<<"Can't calculate log (-ve ) or log(0)"<<endl;
-		if(n==1) cout<<"Can't calculate tan(90)"<<endl;
-		if(n==2) cout<<"Can't calculate sqrt(-ve)"<<endl;
-		if(n==3) cout<<"Numbers of open and closed braces aren't synchronizied"<<endl;
+		cout<<error<<endl;
 	}
 	return 0;
 }
