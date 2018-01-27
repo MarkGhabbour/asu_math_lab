@@ -1,0 +1,17 @@
+1) Tricky 
+      a) wrong answer, also definitin of a variable fails
+      b) right answer
+      c) runtime error
+
+2) Advanced Example
+  a) right
+ b) right
+ c) no-response
+ d) right
+ e) right 
+ f)right 
+ g)right 
+ h)right
+ e) error, but line also gave an error on matlab
+
+
