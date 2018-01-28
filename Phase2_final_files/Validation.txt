@@ -1,0 +1,47 @@
+
+Testing of the project using Dr.Mohamed examples
+
+
+1) Advanced example
+      a) A ->wrong answer A =33.5 not 12  (martin)
+      b) B-> right
+      c) C-> right, only comment the part showing "my favourite part" (martin)
+      d) X & Y both gave run time errors (mark , martin)
+      e) G-> printed in a wrong way	(farag)
+      F) D,E,F, L -> right answers	
+      
+2) Errors example
+      a) A=[1 2; 3] -> it was treated the same as A=[1 2;3 0] also it is a wrong input (fady farag)
+      b) B= 5/0 -> answer was 1.#inf, right answer should be Inf (martin)
+      c) C = 3 * (2 + 4 + -> right answer
+
+3) Example.m
+      a) we should handle the case of defining more than one matrix in a line separated by a comma (farag)
+      b) D= A-B -> gave wrong answer (mark, martin)
+      c) E -> right
+      d) H=C' -> wrong answer, it gave a zero result (farag, martin)
+      e)  G -> right answer but printintg martix numbers is not alligned, also the precision is not the same for all numbers in                   printing and handle negative signs (farag)
+      f) F=A/B -> right answer but there is a mistake in alligning of numbers in printing (farag) 
+
+4) Tricky example
+      a) A-> wrong answer, it gave a zero result instead of 3608.9 (martin)
+      b) rest is right
+ 
+5) big Example
+   NOT TESTED YET
+
+----------------------------------------------------------------------------------------------------------------------------------------    Testing of multiplication of matrix by itself ==> a^100
+
+a) a=[1 2;-0.5 -4]; a^100
+    --> run time error, right answer=  
+      1.0e+57 *
+     -0.3444   -3.3006
+      0.8252    7.9071
+
+   testtt
+
+
+
+
+
+
