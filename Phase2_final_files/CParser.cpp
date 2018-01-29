@@ -1022,13 +1022,13 @@ float CParser::calculate(string a , enum NoCalling detector)
 			float res = subcal(w,noopen-1);
 			w="";
 			if(function=="sin") v.push_back(sin(res));
-			if(function=="cos")v.push_back(cos(res));
-			if(function=="tan") if(res==1.5708) throw(0) ; else v.push_back(tan(res));
-			if(function=="log"){ if (res<=0 ) throw(1);else { v.push_back(log10(res));}}
-			if(function=="sec")v.push_back(1.0/cos(res));
-			if(function=="csc")v.push_back(1.0/sin(res));
-			if(function=="exp")v.push_back(exp(res));
-			if(function=="ln" ) if(res<=0) throw(4) ; else v.push_back(log10(res));
+			else if(function=="cos")v.push_back(cos(res));
+			else if(function=="tan") {if(res==1.5708) throw(1) ; v.push_back(tan(res));}
+			else if(function=="log"){ if (res<=0 ) throw(0); v.push_back(log10(res));}
+			else if(function=="sec"){if(res==1.5708)throw(5);v.push_back(1.0/cos(res));}
+			else if(function=="csc"){if(res==0||res==3.14159)throw(5);v.push_back(1.0/sin(res));}
+			else if(function=="exp")v.push_back(exp(res));
+			else{ if(res<=0) throw(4) ;  v.push_back(log10(res));}
 			result =0;
 			last = ")";
 			no_of_char=end+1;
