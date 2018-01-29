@@ -1461,13 +1461,14 @@ double CParser::calculate(string a , enum NoCalling detector)
 					}
 			result = atof(w.c_str());
 			w="";
-			if(function=="sin") v.push_back(sin(result));
-			if(function=="cos")v.push_back(cos(result));
-			if(function=="tan")v.push_back(tan(result));
-			if(function=="log"){if (result<=0 ) throw(0); else {v.push_back(log10(result));}}
-			if(function=="sec")v.push_back(1.0/cos(result));
-			if(function=="csc")v.push_back(1.0/sin(result));
-			if(function=="exp")v.push_back(exp(result));
+			if(function=="sin") v.push_back(sin(res));
+			else if(function=="cos")v.push_back(cos(res));
+			else if(function=="tan") {if(res==1.5708) throw(1) ; v.push_back(tan(res));}
+			else if(function=="log"){ if (res<=0 ) throw(0); v.push_back(log10(res));}
+			else if(function=="sec"){if(res==1.5708)throw(5);v.push_back(1.0/cos(res));}
+			else if(function=="csc"){if(res==0||res==3.14159)throw(5);v.push_back(1.0/sin(res));}
+			else if(function=="exp")v.push_back(exp(res));
+			else{ if(res<=0) throw(4) ;  v.push_back(log10(res));}
 			result =0;
 			last=")";
 		}
