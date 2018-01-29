@@ -221,6 +221,84 @@ void CParser::take_input()
 }
 
 
+void CParser::take_input_file(char* file_path)
+{
+	ifstream file_name(file_path);
+	while(file_name.peek()!=EOF)
+    {
+		try
+		{
+    int open_brakets=0,closed_brakets=0,open_circle=0,closed_circle=0;
+		string input="";
+		int activate_enter=0;
+		int enter_on=0;
+		do
+		{
+			
+			string h;
+				getline(file_name,h);
+		if(h=="")
+		{
+			enter_on=1;
+			break;
+		}
+		line++;
+		if(h=="exit") return;
+			for(int i=0;i<h.length();i++)
+				{
+					if(h[i]=='[') open_brakets++;
+					else if(h[i]== ']') closed_brakets++;
+					else if(h[i]== '(') open_circle++;
+					else if(h[i]== ')') closed_circle++;
+				}
+			
+			if(closed_circle!= open_circle)
+			{
+				throw("syntax error");
+			}
+				
+			if(activate_enter)
+			{
+				if(h[h.length()-1]!=';' && (open_brakets != closed_brakets))
+				    h+=';';
+			}
+			if(h.find('[')!=-1 &&(!activate_enter))
+			{
+				activate_enter=1;
+				if(h[h.length()-1]!=';' && (open_brakets != closed_brakets))
+				    h+=';';
+			}
+			input+=h;
+				
+		}
+		while(open_brakets != closed_brakets);
+
+		if(enter_on) continue;
+		//remove spaces
+		//remove_spaces(input);
+		input=m_remove_spaces(input);
+		//detect the input
+		detect_input(input);
+		}
+		catch(const char* error)
+	{
+		cout<<error<<" at line "<<line<<endl;
+	}
+
+	catch(int n)
+  	{		 
+		
+		if(n==0) cout<<"Can't calculate log(0) or log(-ve)"<<endl;
+		if(n==1) cout<<"Can't calculate tan(90)"<<endl;
+		if(n==2) cout<<"sqrt(-ve) is an imaginary number"<<endl;
+		if(n==3) cout<<"Braces aren't synchronizied"<<endl;
+		if(n==4) cout<<"Can't calculate ln(0) or ln(-ve)"<<endl;
+ 	  }
+    }
+    file_name.close();
+}
+
+
 string CParser::concat(CMatrix A,CMatrix B)
 {
 	string ret="";
