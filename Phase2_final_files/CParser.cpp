@@ -161,7 +161,7 @@ void CParser::detect_input(string input)
 		{
 			//so it's not an operation it's just printing the value of the operation in a temp value named as ans
 			//first check if there's an operation to make before printing the value
-			int op_found=input.find_first_of("+-/*.^()");
+			int op_found=input.find_first_of("+-/*.^()'");
 			if(op_found==string::npos)
 			{
 				int variable_found=0;
@@ -189,7 +189,7 @@ void CParser::detect_input(string input)
 				}
 				if(variable_found==0)          // error handling
 				{
-					throw("Unidentified Variable");
+					throw("undefined Variable");
 				}
 			}
 			else
@@ -447,7 +447,7 @@ void CParser::detect_input(string input)
 			//if operands are CMatrices--> it's a matrix
 			//else --> it's a variable
 
-			int op_found=input.find_first_of("+-*/^()",input.rfind('=')+2);//skipping the first character (A=-13.5) not an operation
+			int op_found=input.find_first_of("+-*/^()'",input.rfind('=')+2);//skipping the first character (A=-13.5) not an operation
 			if(op_found==string::npos)
 			{
 				string var_name="";
@@ -747,7 +747,7 @@ string CParser::handle_parentheses(string& s, char c )
     }
 	if (c == '0')
 	{     
-		count = 0;
+		count = -1;
 		i = o.length() - 1;
 
 		while (o[i] == '_')
@@ -868,29 +868,21 @@ string CParser:: handle_priorities(string  &s)
 {
 	//just creating arrays containing the operations to be used
 	//op0 operators have higher priority than op1 operators..
-	string op0[9];
-	op0[0] = "sin"; op0[1] = "cos"; op0[2] = "log"; op0[3] = "ln"; op0[4] = "sqrt";
-	op0[5] = "^"; op0[6] = "'"; op0[7]="det"; op0[8]="inv";
-	string op1[3];
-	op1[0] = "*"; op1[1] = "/"; op1[2] = "%";
-	string op2[2];
-	op2[0] = "+"; op2[1] = "-";
-	string op3[4];
-	op3[0] = ".^"; op3[3] = ".*"; op3[1] = "./"; op3[2] = ".%";
-	string op4[2];
-	op4[0] = ".+"; op4[1] = ".-";
 
-	//there may be a bug here, because priority of + is higher than .+ operations
-	//if we have an example1: A./3+4 (it will be treated as A./(3+4) bec, i divided A by 3, the matrix result has no operation on a 
-	//const just by using + operator. matrix+const is invalid).. if we have an operation like A./3+4./B (it will be treated as (A./7)./B)
-	//one may think that we should divide A by 3, 4 divide B, then add the 2 matrices, the conflict appears because
-	//the operators not having same order of priorities in the 2 examples
-	//i chose to treat it as ( (A./7)./B) bec it is still a valid operation (one can do A./B where a and b are matrices)
-	//but if i chose dot '.' operations to be higher in priority than + operation, example one will not be a valid operation
-	//if the user just wanted (A./3)+(4./B) he must use brackets
-	//it is so tedious to handle the case of changing priorities depending on the different combinations of the operands!
+	string op0[10];
+	op0[0] = "sin";   op0[1] = "cos"; op0[2] = "log"; op0[3] = "ln" ; op0[4] = "sqrt";
+    op0[5] = "'"  ;   op0[6]=  "det"; op0[7]="inv";   op0[8] = "tan"; op0[9]= "exp";
 
+	string op1[2]; op1[0] = ".^"; op1[1]="^";
 	
+	string op2[6]; op2[0] = ".*"; op2[1] = "./"; op2[2] = ".%";
+				   op2[3] = "*";  op2[4] = "/";  op2[5] = "%";
+
+	string op3[4]; op3[0] = ".+"; op3[1] = ".-";
+				   op3[2]=  "+";   op3[3] =  "-";
+	
+
+
 	int i = 0, k = 0, start = 0; string q ,o, temp;
 	s += '_';
 	//splitting a part of the string using '_', handing this part to handle_priorities_2, which operates on the priorities
@@ -904,7 +896,7 @@ string CParser:: handle_priorities(string  &s)
 		temp+= handle_priorities_2(q, op1, sizeof(op1) / sizeof(op1[0]), 1);
 		temp+= handle_priorities_2(q, op2, sizeof(op2) / sizeof(op2[0]), 1);
 		temp+= handle_priorities_2(q, op3, sizeof(op3) / sizeof(op3[0]), 1);
-		temp += handle_priorities_2(q, op4, sizeof(op4) / sizeof(op4[0]), 1);
+		
 		o += temp;
 		if (temp.length() != 0)
 			o += "!";

@@ -79,9 +79,9 @@ CMatrix& CMatrix::operator=(const CMatrix& m)
 
 CMatrix CMatrix::operator+(CMatrix &m) 
 	{
-		if((this->nrows!=m.nrows) || (this->ncols!=m.ncols))
+		if((!(this->nrows==m.nrows)) || (!(this->ncols==m.ncols)))
 		{
-			throw("the two matrices doesn't have the same dimensions");
+			throw("the two matrices don't have the same dimensions");
 		}
 		CMatrix c(nrows, ncols);
 		for (int i = 0; i<nrows; i++)
@@ -92,9 +92,9 @@ CMatrix CMatrix::operator+(CMatrix &m)
 
 CMatrix CMatrix::operator-(CMatrix &m)
 	{
-		if((this->nrows!=m.nrows) || (this->ncols!=m.ncols))
+		if((!(this->nrows==m.nrows)) || (!(this->ncols==m.ncols)))
 		{
-			throw("the two matrices doesn't have the same dimensions");
+			throw("the two matrices don't have the same dimensions");
 		}
 		CMatrix c(nrows, ncols);
 		for (int i = 0; i<nrows; i++)
@@ -105,7 +105,7 @@ CMatrix CMatrix::operator-(CMatrix &m)
 
 CMatrix CMatrix::operator*(CMatrix &m)
 	{
-		if((this->ncols!=m.nrows))
+		if(!(this->ncols==m.nrows))
 		{
 			throw("nonconformant arguments:the left hand side matrix should have no. of colomns as the no. of rows of the right hand side matrix");
 		}
@@ -742,12 +742,12 @@ CMatrix::CMatrix(string h,string name)
  			else
  			{
  				 function = temp.substr(0 , 3);
- 				no_char+=4;
+ 				no_char=4;
 				//special+= temp[no_char];
  			}
 			//no_char++;
 			int getno = atoi(temp.substr(no_char , length - no_char).c_str());
-			renew.erase(renew.begin()+renew.size()-1);
+			if(renew.size()>0) renew.erase(renew.begin()+renew.size()-1);
 			if(temp.find('#',0)!=-1) { renew.push_back(trigofmatrix(hash[getno] , function));}
 			else renew.push_back(trigofmatrix(ds[getno] , function));
 			no++;
@@ -759,7 +759,7 @@ CMatrix::CMatrix(string h,string name)
 			no_char=5;
 			//string special ="";special+= temp[no_char];no_char++;
 			int getno = atoi(temp.substr(no_char , length - no_char).c_str());
-			renew.erase(renew.begin()+renew.size()-1);
+			if(renew.size()>0)renew.erase(renew.begin()+renew.size()-1);
 			if(temp.find('#' , 0)!=-1) {renew.push_back(trigofmatrix(hash[getno] , function));}
 			else renew.push_back(trigofmatrix(ds[getno] , function));
 			no++;
@@ -767,12 +767,23 @@ CMatrix::CMatrix(string h,string name)
 		else if (temp=="00") break;
 		else if ((temp[0]=='#'&&temp[1]!='#') || (temp[0]=='$' && temp[1]!='$')) 
 		{
-			char special = temp[0];
-			no_char++;
-			int getno = atoi(temp.substr(no_char , length-no_char).c_str());
-			if(special=='#') renew.push_back(hash[getno]);
-			else renew.push_back(ds[getno]);
-			no++;
+			if(temp[temp.length()-1]==39)  // #0' or $2'
+			{
+				char special=temp[0];
+				int getno=atoi(temp.substr(1,temp.length()-2).c_str());
+				if(special=='#') renew.push_back(hash[getno].transpose());
+				else  renew.push_back(ds[getno].transpose());
+				no++;
+			}
+			else
+			{
+				char special = temp[0];
+				no_char++;
+				int getno = atoi(temp.substr(no_char , length-no_char).c_str());
+				if(special=='#') renew.push_back(hash[getno]);
+				else renew.push_back(ds[getno]);
+				no++;
+			}
 		}
 		else if(temp==".+" || temp==".-" ||temp==".*" ||temp=="./"||temp=="+"||temp=="-"||temp=="*"||temp=="/"||temp=="^"||temp==".^")
  			{no++;continue;}
@@ -790,7 +801,13 @@ CMatrix::CMatrix(string h,string name)
 		}
 		else if ( (temp[0] >= 65 && temp[0] <= 90) || (temp[0] >= 97 && temp[0] <= 122))  /* can be no or matrix */
 		{
-			if(CVariables::check_for_var(temp)!= -1) /* therefore its a no*/
+			if(temp[temp.length()-1]==39)   // transpose operation
+			{
+				string temp1=temp.substr(0,temp.length()-1);
+				renew.push_back(mats[check(temp1)].transpose());
+				no++;
+			}
+			else if(CVariables::check_for_var(temp)!= -1) /* therefore its a no*/
 			{
 				CMatrix c ; 
 				c.nrows=1;c.ncols=1;c.pp_rows=new double*[1];
@@ -850,7 +867,6 @@ CMatrix::CMatrix(string h,string name)
 	else
 		return renew[renew.size() - 1 ] ;
 }
-
 
 CMatrix CMatrix::calculate_expression(string s)
 {
