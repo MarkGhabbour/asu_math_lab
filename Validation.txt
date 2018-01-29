@@ -3,11 +3,11 @@ Testing of the project using Dr.Mohamed examples
 
 
 1) Advanced example
-      a) A ->wrong answer A =33.5 not 12  (martin)
+      a) A ->wrong answer A =33.5 not 12  (martin)    :: solved and now it gave 33.5986"right answer" (andrew)
       b) B-> right
       c) C-> right, only comment the part showing "my favourite part" (martin)
-      d) X & Y both gave run time errors (mark , martin)
-      e) G-> printed in a wrong way	(farag)
+      d) X & Y both gave run time errors (mark , martin)      :: ^ operator which gave this errors (andrew)
+      e) G-> printed in a wrong way	(farag)    
       F) D,E,F, L -> right answers	
       
 2) Errors example
@@ -28,7 +28,8 @@ Testing of the project using Dr.Mohamed examples
       b) rest is right
  
 5) big Example
-   NOT TESTED YET
+ it gave run time error    (andrew)
+ but if we remove the last coulmn in a and b it will give right answer (andrew)
 
 ----------------------------------------------------------------------------------------------------------------------------------------    Testing of multiplication of matrix by itself ==> a^100
 
