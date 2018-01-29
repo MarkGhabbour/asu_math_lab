@@ -1,1571 +1,1064 @@
 #include"CMatrix.h"
 #include"CParser.h"
 
-void CParser::take_input()
-{
-    while(1)
-    {
-    int open_brakets=0,closed_brakets=0,open_circle=0,closed_circle=0;
-		string input="";
-		int activate_enter=0;
-		int enter_on=0;
-		do
-		{
-			
-			string h;
-		getline(cin,h);
-		if(h=="")
-		{
-			enter_on=1;
-			break;
-		}
-		line++;
-		if(h=="exit") return;
-			for(int i=0;i<h.length();i++)
-				{
-					if(h[i]=='[') open_brakets++;
-					else if(h[i]== ']') closed_brakets++;
-					else if(h[i]== '(') open_circle++;
-					else if(h[i]== ')') closed_circle++;
-				}
-			
-			if(closed_circle!= open_circle)
-			{
-				throw("syntax error");
-			}
-				
-			if(activate_enter)
-			{
-				if(h[h.length()-1]!=';' && (open_brakets != closed_brakets))
-				    h+=';';
-			}
-			if(h.find('[')!=-1 &&(!activate_enter))
-			{
-				activate_enter=1;
-				if(h[h.length()-1]!=';' && (open_brakets != closed_brakets))
-				    h+=';';
-			}
-			input+=h;
-				
-		}
-		while(open_brakets != closed_brakets);
+vector <CVariables> vars;
+vector <CMatrix> mats;
+int line=0;
 
-		if(enter_on) continue;
-		//remove spaces
-		//remove_spaces(input);
-		input=m_remove_spaces(input);
-		//detect the input
-		detect_input(input);
-		
-    }
+int CMatrix::print;
+
+CMatrix::CMatrix()
+	{
+		nrows = 0;
+		ncols = 0;
+		type=true;
+		pp_rows = NULL;
+	}
+
+CMatrix::CMatrix(int r, int c)     
+	{
+		nrows = r;
+		ncols = c;
+		type=true;
+		pp_rows = new double*[r];
+		for (int i = 0; i<r; i++) pp_rows[i] = new double[c];
+		for (int i = 0; i<r; i++)
+			for (int j = 0; j<c; j++)
+				pp_rows[i][j] = 0;
+	}
+
+CMatrix::~CMatrix()
+	{
+		destroy_matrix();
+	}
+	
+
+void CMatrix::destroy_matrix()
+	{
+		if (pp_rows)
+		{
+			for (int i = 0; i<nrows; i++)
+				delete[] pp_rows[i];
+			delete[] pp_rows;
+		}
+		nrows = 0;
+		ncols = 0;
+		pp_rows = NULL;
+	}
+
+void CMatrix::copy_matrix(const CMatrix &m) 
+	{
+		this->destroy_matrix();
+		this->nrows = m.nrows;
+		this->ncols = m.ncols;
+		this->name=m.name;
+		this->type=m.type;
+		if ((nrows*ncols) == 0) { pp_rows = NULL; return; }
+		pp_rows = new double*[nrows];
+		for (int i = 0; i<nrows; i++) pp_rows[i] = new double[ncols];
+		for (int i = 0; i<nrows; i++)
+			for (int j = 0; j<ncols; j++)
+				pp_rows[i][j] = m.pp_rows[i][j];
+	}
+
+CMatrix::CMatrix(const CMatrix &m)
+	{
+		nrows = 0; ncols = 0; pp_rows = NULL;
+		copy_matrix(m);
+	}
+
+CMatrix& CMatrix::operator=(const CMatrix& m) 
+	{
+		string this_name=this->name;
+		bool this_type=this->type;
+		copy_matrix(m);
+		this->name=this_name; //to over come equating matrices problem
+		this->type=this_type;
+		return *this;
+	}
+
+CMatrix CMatrix::operator+(CMatrix &m) 
+	{
+		if((this->nrows!=m.nrows) || (this->ncols!=m.ncols))
+		{
+			throw("the two matrices doesn't have the same dimensions");
+		}
+		CMatrix c(nrows, ncols);
+		for (int i = 0; i<nrows; i++)
+			for (int j = 0; j<ncols; j++)
+				c.set_element(i, j, pp_rows[i][j] + m.pp_rows[i][j]);
+		return c;
+	}
+
+CMatrix CMatrix::operator-(CMatrix &m)
+	{
+		if((this->nrows!=m.nrows) || (this->ncols!=m.ncols))
+		{
+			throw("the two matrices doesn't have the same dimensions");
+		}
+		CMatrix c(nrows, ncols);
+		for (int i = 0; i<nrows; i++)
+			for (int j = 0; j<ncols; j++)
+				c.set_element(i, j, pp_rows[i][j] - m.pp_rows[i][j]);
+		return c;
+	}
+
+CMatrix CMatrix::operator*(CMatrix &m)
+	{
+		if((this->ncols!=m.nrows))
+		{
+			throw("nonconformant arguments:the left hand side matrix should have no. of colomns as the no. of rows of the right hand side matrix");
+		}
+		CMatrix c(nrows, m.ncols);
+		for (int i = 0; i<nrows; i++)
+		{
+			for (int j = 0; j<m.ncols; j++)
+			{
+				double el = 0;
+				for (int k = 0; k<ncols; k++)
+					el += pp_rows[i][k] * m.pp_rows[k][j];
+				c.set_element(i, j, el);
+			}
+		}
+		return c;
+	}
+
+CMatrix CMatrix::transpose() 
+	{
+		CMatrix m(this->ncols, this->nrows);
+		for (int i = 0; i<this->nrows; i++)
+		{
+			for (int j = 0; j<this->ncols; j++)
+				m.set_element(j, i, pp_rows[i][j]);
+		}
+		return m;
+	}
+
+CMatrix CMatrix::get_cofactor(int r,int c)
+	{
+		CMatrix m(nrows-1,ncols-1);
+		for(int i=0;i<m.nrows;i++)
+		{
+			for(int j=0;j<m.ncols;j++)
+			{
+				int sR = (i<r)?i:i+1;
+				int sC = (j<c)?j:j+1;
+				m.pp_rows[i][j] = pp_rows[sR][sC];
+			}
+		}
+		return m;
+	}
+
+double CMatrix::get_determinant()
+	{
+		if(nrows==1 && ncols==1) return pp_rows[0][0];
+		double values=0; int m=1;
+		for(int i=0;i<nrows;i++)
+		{
+			values+=m*pp_rows[0][i]*get_cofactor(0,i).get_determinant();
+			m*=-1;
+		}
+		return values;
+	}
+
+CMatrix CMatrix::operator/(CMatrix &m)
+	{
+		if((this->nrows!=this->ncols)||(m.nrows!=m.ncols))
+			throw("nonconformant arguments:can't divide non square matrices");
+		if((this->nrows!=m.nrows)||(this->ncols!=m.ncols))
+			throw("nonconformant arguments:can't divide two matrices that haven't non equal dimensions");
+
+		double a=m.get_determinant_LU();
+		if(a==0)
+			throw("singular matrix");
+		CMatrix x(m.nrows,m.ncols); int sign=1;
+		for(int i=0;i<x.nrows;i++)
+		{
+			for(int j=0;j<x.ncols;j++)
+			{
+				if(i%2 != j%2) sign=-1; else sign=1;
+				x.set_element(i,j,sign*m.get_cofactor(i,j).get_determinant_LU());
+			}
+		}
+		x=x.transpose();
+		return *this*x*(1.0/a);
+	}
+
+CMatrix CMatrix::operator/(double d)
+	{
+		if(d==0)
+			throw("error:can't divide by zero");
+		CMatrix r1(this->nrows, this->ncols);
+		for (int i = 0; i<r1.nrows; i++)
+			for (int j = 0; j<r1.ncols; j++)
+				r1.set_element(i, j, double(this->pp_rows[i][j]) / d);
+		return r1;
+	}
+
+CMatrix CMatrix::operator*(double d)
+	{
+		CMatrix r1(this->nrows, this->ncols);
+		for (int i = 0; i<r1.nrows; i++)
+			for (int j = 0; j<r1.ncols; j++)
+				r1.set_element(i, j, this->pp_rows[i][j] * d);
+		return r1;
+	}
+
+CMatrix CMatrix::operator+(double d)
+	{
+		CMatrix r1(this->nrows, this->ncols);
+		for (int i = 0; i<r1.nrows; i++)
+			for (int j = 0; j<r1.ncols; j++)
+				r1.set_element(i, j, this->pp_rows[i][j] + d);
+		return r1;
+	}
+
+CMatrix CMatrix::operator-(double d)
+	{
+		CMatrix r1(this->nrows, this->ncols);
+		for (int i = 0; i<r1.nrows; i++)
+			for (int j = 0; j<r1.ncols; j++)
+				r1.set_element(i, j, this->pp_rows[i][j] - d);
+		return r1;
+	}
+
+CMatrix CMatrix::operator-()
+	{
+		CMatrix r1(this->nrows, this->ncols);
+		for (int i = 0; i<r1.nrows; i++)
+			for (int j = 0; j<r1.ncols; j++)
+				r1.set_element(i, j, -1 * this->pp_rows[i][j]);
+		return r1;
+	}
+
+#include<math.h>
+//////////////////////////////////////////////////////////////////////////
+CMatrix CMatrix::operator^ (int a)
+{
+	if(nrows!=ncols)
+		throw("can't find the power of non square matrix");
+	CMatrix y(nrows, ncols);
+	CMatrix x[100];
+	x[0] = *this;
+	int n = 1;
+	for (n = 1;pow(2, n) <= a;n++)
+	{
+		x[n] = x[n - 1] * x[n - 1];
+
+	}
+	n--;
+	int diff = a - pow(2, n);
+	if (diff == 0)
+	{
+		return x[n];
+	}
+	else {
+		y = x[n];
+
+		while (diff > 0) {
+
+			if (diff >= pow(2, n))
+			{
+				diff = diff - pow(2, n);
+				//	cout << diff<<"xxxxxxx";
+				y = y*x[n];
+
+
+			}
+			else {
+				--n;
+				//cout << n<<endl;
+			}
+		}
+		return y;
+	}
+
+
+
 }
 
 
-void CParser::take_input_file(char* file_path)
-{
-	ifstream file_name(file_path);
-	while(file_name.peek()!=EOF)
-    {
-    int open_brakets=0,closed_brakets=0,open_circle=0,closed_circle=0;
-		string input="";
-		int activate_enter=0;
-		int enter_on=0;
-		do
-		{
-			
-			string h;
-				getline(file_name,h);
-		if(h=="")
-		{
-			enter_on=1;
-			break;
-		}
-		line++;
-		if(h=="exit") return;
-			for(int i=0;i<h.length();i++)
-				{
-					if(h[i]=='[') open_brakets++;
-					else if(h[i]== ']') closed_brakets++;
-					else if(h[i]== '(') open_circle++;
-					else if(h[i]== ')') closed_circle++;
-				}
-			
-			if(closed_circle!= open_circle)
-			{
-				throw("syntax error");
-			}
-				
-			if(activate_enter)
-			{
-				if(h[h.length()-1]!=';' && (open_brakets != closed_brakets))
-				    h+=';';
-			}
-			if(h.find('[')!=-1 &&(!activate_enter))
-			{
-				activate_enter=1;
-				if(h[h.length()-1]!=';' && (open_brakets != closed_brakets))
-				    h+=';';
-			}
-			input+=h;
-				
-		}
-		while(open_brakets != closed_brakets);
 
-		if(enter_on) continue;
-		//remove spaces
-		//remove_spaces(input);
-		input=m_remove_spaces(input);
-		//detect the input
-		detect_input(input);
-		
-    }
-    file_name.close();
+void CMatrix::set_element(int a, int b, double value)
+	{
+		pp_rows[a][b] = value;
+	}  
+
+CMatrix CMatrix::num_sub_mat(double d)  //A-4
+	{
+		return -*this + d;
+	}
+
+CMatrix CMatrix::num_div_mat(double d) // 5/A 
+	{
+		CMatrix r1(this->nrows, this->ncols);
+		for (int i = 0; i<this->nrows; i++)
+			for (int j = 0; j<this->ncols; j++)
+			{
+				if(this->pp_rows[i][j]==0)
+					throw("error:can't divide by zero");
+				r1.set_element(i, j, 1.0 / this->pp_rows[i][j]);
+			}
+		return r1*d;
+	}
+
+CMatrix CMatrix::mat_pow_num(double d)  //B^2
+{
+	CMatrix x(this->nrows,this->ncols);
+	x.type=true;
+	for(int i=0;i<nrows;i++)
+		for(int j=0;j<ncols;j++)
+			x.set_element(i,j,pow(pp_rows[i][j],d));
+	return x;
 }
 
+CMatrix CMatrix::partial_mul(CMatrix &m)
+ {
+ 	CMatrix x(this->nrows,this->ncols);
+ 	x.type=true;
+ 	for(int i=0;i<x.nrows;i++)
+ 	{
+ 		for(int j=0;j<x.ncols;j++)
+ 		{
+ 			x.set_element(i,j,this->pp_rows[i][j]*m.pp_rows[i][j]);
+ 		}
+ 	}
+ 	return x;
+ }
 
-void CParser::detect_input(string input)
+CMatrix CMatrix::partial_div(CMatrix &m)
+ {
+ 	CMatrix x(this->nrows,this->ncols);
+ 	x.type=true;
+ 	for(int i=0;i<x.nrows;i++)
+ 	{
+ 		for(int j=0;j<x.ncols;j++)
+ 		{
+			if(m.pp_rows[i][j]==0)
+				throw("error:can't divide by zero");
+ 			x.set_element(i,j,this->pp_rows[i][j]/m.pp_rows[i][j]);
+ 		}
+ 	}
+ 	return x;
+ }
+
+void CMatrix::print_matrix(string name)
+	{
+		if(print==0) return;
+		cout << name << " =" << endl;
+		for (int i = 0; i<nrows; i++)
+		{
+			for (int j = 0; j<ncols; j++)
+				cout << "\t" << pp_rows[i][j];
+			cout << endl;
+		}
+	}
+
+CMatrix::CMatrix(int r,int c,string type)
 {
-	int equal_sign=0;
-	for(int i=0;i<input.length();i++)
+		nrows = r;
+		ncols = c;
+		type=true;
+		pp_rows = new double*[r];
+		for (int i = 0; i<r; i++) pp_rows[i] = new double[c];
+		for (int i = 0; i<r; i++){
+			for (int j = 0; j<c; j++){
+				if(i==j) pp_rows[i][j]=1;
+				else pp_rows[i][j] = 0;
+			}
+		}
+}
+
+CMatrix CMatrix::inv() // mark correction
+{
+	CMatrix m=*this;
+	CMatrix x(m.nrows,m.ncols,"unity"); // creating a unity matrix   //this is a constructor needs to be completed i made a similar one can be removed just use it for now
+	for(int i=0;i<m.nrows;i++)
 	{
-		if(input[i]=='=')
-			equal_sign++;
-	}
-
-	CMatrix::print=1;	//this is the static variable of the class CMatrix::print
-
-	if(input[input.length()-1]==';')
-	{
-		CMatrix::print=0;
-		input.erase(input.length()-1,1);
-	}
-
-	if(equal_sign==0) 
+		for(int j=0;j<m.ncols;j++)
 		{
-			//so it's not an operation it's just printing the value of the operation in a temp value named as ans
-			//first check if there's an operation to make before printing the value
-			int op_found=input.find_first_of("+-/*.^()");
-			if(op_found==string::npos)
-			{
-				int variable_found=0;
-				//print the matrix or the variable and input= its name
-				for(int i=0;i<mats.size();i++)
-				{
-					if(mats[i].name==input)
-					{
-						mats[i].print_mat();
-						variable_found=1;
-						break;
-					}
-				}
-				if(!variable_found)
-				{
-					for(int i=0;i<vars.size();i++)
-					{
-						if(vars[i].name==input)
-						{
-							vars[i].print_var();
-							variable_found=1;
-							break;
-						}
-					}
-				}
-				if(variable_found==0)          // error handling
-				{
-					throw("Unidentified Variable");
-				}
-			}
-			else
-			{
-				//do the operation and print the value under the name "ans"
-				int matrix_operation=0;
-				for(int i=0;i<mats.size();i++)
-				{
-					if(input.find(mats[i].name)!=-1)    //if any matrix was in this line so it's a matrix operation
-					{
-						matrix_operation=1;
-						for(int p=0;p<vars.size();p++)
-						{
-							if(input.find(vars[p].name)!=-1)
-							{
-								input.replace(input.find(vars[p].name),vars[p].name.length(),to_string(vars[p].value));
-								p--;
-							}
-						}
-						CMatrix a=CMatrix::calculate_expression(input);
-						string mat_name="ans";
-						a.name=mat_name;
-						//to check if there's any other matrix with the same name to overwrite it
-						int mat_pos=-1;
-						for(int i=0;i<mats.size();i++)
-						{
-							if(mats[i].name==mat_name)
-							{
-								mat_pos=i;
-								break;
-							}
-						}
-						if(mat_pos==-1)
-						{
-						mats.push_back(a);
-						mats[mats.size()-1].print_mat();
-						}
-						else 
-							{
-								mats[mat_pos]=a;
-								a.print_mat();
-							}
-						//check ended
-
-						break;
-					}
-				}
-				if(!matrix_operation)
-				{
-					string var_name="ans";
-					for(int p=0;p<vars.size();p++)
-						{
-							if(input.find(vars[p].name)!=-1)
-							{
-								input.replace(input.find(vars[p].name),vars[p].name.length(),to_string(vars[p].value));
-								p--;
-							}
-						}
-					CVariables a(calculate(input, First),var_name);
-					//to check if there's any other variable with the same name to overwrite it
-					int var_pos=-1;
-					for(int i=0;i<vars.size();i++)
-					{
-						if(vars[i].name==var_name)
-						{
-							var_pos=i;
-							break;
-						}
-					}
-					if(var_pos!=-1)
-					{
-						vars[var_pos].value=a.value;
-						vars[var_pos].print_var();
-					}
-					else
-						{
-							vars.push_back(a);
-							vars[vars.size()-1].print_var();
-						}
-					//check ended
-				}
-			}
-
+			double a=m.pp_rows[i][i];  // the element in the main diagonal
+			m.pp_rows[i][j]/=a;        // devide both the main matrix and the unity matrix by it to make the element in the main diagonal one
+			x.pp_rows[i][j]/=a;
 		}
-		else if(input.find("rand")!= -1 || input.find("eye")!= -1 || input.find("zeros")!= -1 || input.find("ones")!= -1) 
+		for(int k=0;k<m.nrows;k++)
 		{
-			// so it's a special  matrix definition
-			string mat_name="";
-				for(int i=0;input[i]!='=';i++)
-				{
-					mat_name+=input[i];
-				}
-			int nR=atof(input.substr(input.find("(")+1,input.find(",")-input.find("(")-1).c_str());
-			int nC=atof(input.substr(input.find(",")+1,input.find(")")-input.find(",")-1).c_str());
-			if(input.find("rand")!=-1)
-			{
-				//make a random matrix
-				//use the constructor by giving it nR,nC and the random mode
-				CMatrix a(nR,nC,3,mat_name);
-
-				//to check if there's any other matrix with the same name to overwrite it
-						int mat_pos=-1;
-						for(int i=0;i<mats.size();i++)
-						{
-							if(mats[i].name==mat_name)
-							{
-								mat_pos=i;
-								break;
-							}
-						}
-						if(mat_pos==-1)
-						{
-						mats.push_back(a);
-						mats[mats.size()-1].print_mat();
-						}
-						else 
-							{
-								mats[mat_pos]=a;
-								a.print_mat();
-							}
-						//check ended
-			}
-			if(input.find("eye")!=-1)
-			{
-				//make a unity matrix
-				//use the constructor by giving it nR,nC and the unity mode
-				CMatrix a(nR,nC,4,mat_name);
-				//to check if there's any other matrix with the same name to overwrite it
-						int mat_pos=-1;
-						for(int i=0;i<mats.size();i++)
-						{
-							if(mats[i].name==mat_name)
-							{
-								mat_pos=i;
-								break;
-							}
-						}
-						if(mat_pos==-1)
-						{
-						mats.push_back(a);
-						mats[mats.size()-1].print_mat();
-						}
-						else 
-							{
-								mats[mat_pos]=a;
-								a.print_mat();
-							}
-						//check ended
-			}
-			if(input.find("zeros")!=-1)
-			{
-				//make a zero matrix
-				//use the constructor by giving it nR,nC and the zero mode
-				CMatrix a(nR,nC,1,mat_name);
-				//to check if there's any other matrix with the same name to overwrite it
-						int mat_pos=-1;
-						for(int i=0;i<mats.size();i++)
-						{
-							if(mats[i].name==mat_name)
-							{
-								mat_pos=i;
-								break;
-							}
-						}
-						if(mat_pos==-1)
-						{
-						mats.push_back(a);
-						mats[mats.size()-1].print_mat();
-						}
-						else 
-							{
-								mats[mat_pos]=a;
-								a.print_mat();
-							}
-						//check ended
-			}
-			if(input.find("ones")!=-1)
-			{
-				//make a one matrix
-				//use the constructor by giving it nR,nC and the one mode
-				CMatrix a(nR,nC,2,mat_name);
-				//to check if there's any other matrix with the same name to overwrite it
-						int mat_pos=-1;
-						for(int i=0;i<mats.size();i++)
-						{
-							if(mats[i].name==mat_name)
-							{
-								mat_pos=i;
-								break;
-							}
-						}
-						if(mat_pos==-1)
-						{
-						mats.push_back(a);
-						mats[mats.size()-1].print_mat();
-						}
-						else 
-							{
-								mats[mat_pos]=a;
-								a.print_mat();
-							}
-						//check ended
-			}
-
-		}
-		else if(input.find("[")!=-1)
-		{
-			string mat_name="";
-				for(int i=0;input[i]!='=';i++)
-				{
-					mat_name+=input[i];
-				}
-			// it's a matrix definition
-			int begin=input.find("[");
-			int end=input.rfind("]");
-			string mat_to_be_defined=input.substr(begin+1,end-begin-1);
-			for(int p=0;p<vars.size();p++)
-						{
-							if(mat_to_be_defined.find(vars[p].name)!=-1)
-							{
-								mat_to_be_defined.replace(mat_to_be_defined.find(vars[p].name),vars[p].name.length(),to_string(vars[p].value));
-								p--;
-							}
-						}
-			string mat_string=create_mat(mat_to_be_defined,1);
-			CMatrix a(mat_string,mat_name);
-			//to check if there's any other matrix with the same name to overwrite it
-						int mat_pos=-1;
-						for(int i=0;i<mats.size();i++)
-						{
-							if(mats[i].name==mat_name)
-							{
-								mat_pos=i;
-								break;
-							}
-						}
-						if(mat_pos==-1)
-						{
-						mats.push_back(a);
-						mats[mats.size()-1].print_mat();
-						}
-						else 
-							{
-								mats[mat_pos]=a;
-								mats[mat_pos].name=mat_name;
-								a.print_mat();
-							}
-						//check ended
-		}
-		else
-		{
-			//it's a const or matrix operation
-			//if no operations exist so it should be CVariable as it contains no []
-			//if there are operations check the operands 
-			//if operands are CMatrices--> it's a matrix
-			//else --> it's a variable
-
-			int op_found=input.find_first_of("+-*/^()",input.rfind('=')+2);//skipping the first character (A=-13.5) not an operation
-			if(op_found==string::npos)
-			{
-				string var_name="";
-				int i;
-				for(i=0;input[i]!='=';i++)
-				{
-					var_name+=input[i];
-				}
-				double var_value=atof(input.substr(i+1).c_str());
-					CVariables a(var_value,var_name);
-					//to check if there's any other variable with the same name to overwrite it
-					int var_pos=-1;
-					for(int i=0;i<vars.size();i++)
-					{
-						if(vars[i].name==var_name)
-						{
-							var_pos=i;
-							break;
-						}
-					}
-					if(var_pos!=-1)
-					{
-						vars[var_pos].value=a.value;
-						vars[var_pos].print_var();
-					}
-					else
-						{
-							vars.push_back(a);
-							vars[vars.size()-1].print_var();
-						}
-					//check ended
-			}
+			if(k==i) continue;
 			else 
 			{
-				int matrix_operation=0;
-				for(int i=0;i<mats.size();i++)
+				for(int z=0;z<m.ncols;z++)    // looping through all elements except the main diagonal
 				{
-					if(input.find(mats[i].name)!=-1)    //if any matrix was in this line so it's a matrix operation
-					{
-						matrix_operation=1;
-						string mat_to_be_calculated=input.substr(input.find('=')+1);
-						for(int p=0;p<vars.size();p++)
-						{
-							if(mat_to_be_calculated.find(vars[p].name)!=-1)
-							{
-								mat_to_be_calculated.replace(mat_to_be_calculated.find(vars[p].name),vars[p].name.length(),to_string(vars[p].value));
-								p--;
-							}
-						}
-						CMatrix a=CMatrix::calculate_expression(mat_to_be_calculated);
-						string mat_name="";
-						for(int i=0;input[i]!='=';i++)
-						{
-							mat_name+=input[i];
-						}
-						a.name=mat_name;
-						//to check if there's any other matrix with the same name to overwrite it
-						int mat_pos=-1;
-						for(int i=0;i<mats.size();i++)
-						{
-							if(mats[i].name==mat_name)
-							{
-								mat_pos=i;
-								break;
-							}
-						}
-						if(mat_pos==-1)
-						{
-						mats.push_back(a);
-						mats[mats.size()-1].print_mat();
-						}
-						else 
-							{
-								mats[mat_pos]=a;
-								a.print_mat();
-							}
-						//check ended
-						break;
-					}
-				}
-				if(!matrix_operation)
-				{
-					string var_name="";
-					string var_to_be_calculated=input.substr(input.find('=')+1);
-					for(int i=0;input[i]!='=';i++)
-						{
-							var_name+=input[i];
-						}
-					for(int p=0;p<vars.size();p++)
-					{
-						if(var_to_be_calculated.find(vars[p].name)!=-1)
-						{
-							var_to_be_calculated.replace(var_to_be_calculated.find(vars[p].name),vars[p].name.length(),to_string(vars[p].value));
-							p--;
-						}
-					}
-					CVariables a(calculate(var_to_be_calculated, First),var_name);
-					//to check if there's any other variable with the same name to overwrite it
-					int var_pos=-1;
-					for(int i=0;i<vars.size();i++)
-					{
-						if(vars[i].name==var_name)
-						{
-							var_pos=i;
-							break;
-						}
-					}
-					if(var_pos!=-1)
-					{
-						vars[var_pos].value=a.value;
-						vars[var_pos].print_var();
-					}
-					else
-						{
-							vars.push_back(a);
-							vars[vars.size()-1].print_var();
-						}
-					//check ended
+					double b=m.pp_rows[k][i]; // the corresponding element in each row we'll use it to zero the other elements under it
+					m.pp_rows[k][z]+=-1*b*m.pp_rows[i][z];
+					x.pp_rows[k][z]+=-1*b*x.pp_rows[i][z];
 				}
 			}
 		}
-}
-
-string CParser::concat(CMatrix A,CMatrix B)
-{
-	string ret="";
-	for(int i=0;i<A.nrows;i++)
-	{
-		for(int j=0;j<(A.ncols+B.ncols);j++)
-		{
-			if(j<A.ncols) ret+=to_string(A.pp_rows[i][j]);
-			else ret+=to_string(B.pp_rows[i][j-A.ncols]);
-
-			if(j!=(A.ncols+B.ncols-1)) ret+=" ";
-		}
-		if(i!=(A.nrows-1)) ret+=";";
 	}
-	//cout<<ret<<endl;
-	return ret;
+	//return the matrix that was a unity matrix
+	return x;
+}
+
+double CMatrix::get_determinant_LU()
+{
+	if(ncols!=nrows)
+		throw("can't find the determinant of a non-square matrix");
+	CMatrix m=*this;
+	double det=1;
+	for(int i=0;i<m.nrows;i++)
+	{
+		double a=m.pp_rows[i][i]; // if the element we wish to divide by is zero so we'll find another row and replace it with it and multiply by -1
+		if(a==0)
+		{
+			for(int x=i+1;x<m.nrows;x++)
+			{
+				int found=0;
+				if(m.pp_rows[x][i]!=0)
+				{
+					found=1;
+					a=m.pp_rows[x][i];
+					for(int y=0;y<m.ncols;y++)
+					{
+						double temp=m.pp_rows[i][y];
+						m.pp_rows[i][y]=m.pp_rows[x][y];
+						m.pp_rows[x][y]=temp;
+					}
+				}
+			if(found==1) {det*=-1; break;}
+			}
+		}
+		for(int j=i+1;j<m.nrows;j++)
+		{
+		//	a=m.pp_rows[i][i];
+			double b=m.pp_rows[j][i];
+			if(b==0) continue;
+			for(int k=0;k<m.ncols;k++)
+			{
+				double c=-b/a;
+				m.pp_rows[j][k]=m.pp_rows[j][k]+m.pp_rows[i][k]*c;
+			}
+		}
+	}
+	for(int i=0;i<m.nrows;i++) {det*=m.pp_rows[i][i];}
+	return det;
+}
+
+bool CMatrix::check_singularity()
+{
+	int zero=0;
+	for(int i=0;i<this->nrows-1;i++)
+	{
+		double a=pp_rows[i+1][0]/pp_rows[i][0];
+		for(int j=1;j<this->ncols;j++)
+		{
+			double b=pp_rows[i+1][j]/pp_rows[i][j];
+			if(a!=b) {break;}
+			if(j==this->ncols-1){zero=1;}
+		}
+		if(zero) break;
+	}
+	if(zero) return true;
+	else if(this->get_determinant_LU()==0) return true;
+	else return false;
 }
 
 
-
-string CParser::create_mat(string h,int mode)
-{
-	static int temp_counter=0;
-    //searching for CVariables
-    //only in the first time
-    if(mode==1)
+/////////////////phase 2////////////////
+CMatrix::CMatrix(int r,int c,int mode,string name)  //1:zeros  2:ones  3:rand  4:eye
     {
-        for(int i=0;i<vars.size();i++)
+        this->nrows=r;
+        this->ncols=c;
+		this->name=name;
+		type=true;
+        pp_rows=new double*[r];
+        for(int i=0;i<r;i++)
         {
-            int pos=h.find(vars[i].name);
-            if(pos != -1)
-                {h.replace(pos,vars[i].name.length(),to_string(vars[i].value)); i--;} //if it's repeated so find it again
-            }
-    }
-    //searching for [ ]
-  /*  while(h.find("[")!=-1)
-    {
-        int open_braket_pos=h.find("[");
-        int closed_braket_pos=h.find("]");
-        string mat_name=create_mat(h.substr(open_braket_pos+1,closed_braket_pos-open_braket_pos-1),2);
-        h.replace(open_braket_pos,closed_braket_pos-open_braket_pos,mat_name);
-        }*/
-	int brakets=0,flag=0,open_braket_pos,closed_braket_pos,smallest_closed=0,first_open=0,first_open_pos;
-	for(int i=0;i<=h.length();i++)
-	{
-		if(h[i]=='[') 
-		{
-			brakets++; 
-			flag=1; 
-			open_braket_pos=i;
-			if(first_open==0)
+            pp_rows[i]=new double[c];
+			for(int j=0;j<c;j++)
 			{
-				first_open=1;
-				first_open_pos=i;
+				if(mode==1) pp_rows[i][j]=0;
+				else if(mode==2) pp_rows[i][j]=1;
+				else if(mode==3) pp_rows[i][j]=((rand()%10)+1)*0.1; //we need to adjust the range of the random number
+				else if(mode==4) pp_rows[i][j]=((i==j)?1:0);
 			}
 		}
-		else if(h[i]==']') 
-		{
-			brakets--; 
-			if(smallest_closed==0)
-			{
-				closed_braket_pos=i;
-				smallest_closed=1;
-				brakets=0;
-			}
-		}
+	  }
 
-		if(flag==1 && brakets==0)
-		{
-			string mat_name=create_mat(h.substr(open_braket_pos+1,closed_braket_pos-open_braket_pos-1),2);
-			h.replace(open_braket_pos,closed_braket_pos-open_braket_pos+1,mat_name);
-		//	i=open_braket_pos+1;
-			i=first_open_pos-1;
-			smallest_closed=0;
-			first_open=0;
-			flag=0;
-		}
-	}
-   
-    //here no [ ] exists only elements or matrices
-    //searching for matrices
-	for(int i=0;i<mats.size();i++)
-	{
-		int pos=h.find(mats[i].name);
-		if(pos!=-1)
-		{
-			if( (pos==0 ||h[pos-1]==';' ) && (pos==h.length()-mats[i].name.length() ||h[pos+mats[i].name.length()]==';') )
-			{
-				h.replace(pos,mats[i].name.length(),concat(mats[i],CMatrix(0,0)));   //edit
-			}
-			else if((pos==0 ||h[pos-1]==';') && (h[pos+mats[i].name.length()]==' '||h[pos+mats[i].name.length()]==','))
-			{
-				int second_mat_pos=h.find_first_of(" ;",pos+mats[i].name.length()+1);
-				string second_mat=h.substr(pos+mats[i].name.length()+1,second_mat_pos-pos-mats[i].name.length()-1);
-				for(int j=0;j<mats.size();j++)
-				{
-					if(second_mat==mats[j].name)
-					{
-						h.replace(pos,mats[i].name.length()+mats[j].name.length()+1,concat(mats[i],mats[j]));
-						i--;
-						break;
-					}
-				}
-			}
-			i--; //added to find the same matrix again
-		}
-	}
-    
+CMatrix::CMatrix(string h,string name)
+	  {
+		  this->name=name;
+		  type=true;
+		  int r=1,c=1,enough_cols=0;
+		 for(int i=0;i<h.length();i++)
+		  {
+			  if((h[i]==' ' || h[i]==',')&& !enough_cols) c++;
+			 
+			  else if((h[i]==';' || h[i]==13)  && (i!=h.length()-1))    //13:the ascii code of enter key
+			  {
+				  r++;
+				  enough_cols=1;
+				 
+			  }
+		  }
+		//  int mode=1;
+		  //if(name[1]=='#') mode=2;
+		//  *this=CMatrix(r,c,mode,name);
+		  //to validate the input matrix
+		  bool** validate_mat=new bool*[r];
+		  //it's own initialization
+		  this->nrows=r;
+		  this->ncols=c;
+		  this->pp_rows=new double*[r];
+		  for(int i=0;i<r;i++)
+		  {
+			  validate_mat[i]=new bool[c];
+			  this->pp_rows[i]=new double [c];
+			 for(int j=0;j<c;j++)
+			 {
+				 validate_mat[i][j]=false;
+				 pp_rows[i][j]=0;
+			 }
+		  }
+		  r=0;c=0;
+		  string el="";
+		  for(int i=0;i<h.length();i++)	
+		  {
+			  if(r>=this->nrows || c>=this->ncols)
+				  throw("dimensions mismatch");
+			  //to solve the problem of having 1*1 matrix with element of one digit
+			  if(i==0 && i+1==h.length())
+			  {
+				  el+=h[i];
+				  if(el.find_first_of("+/*^()")!=string::npos || (el.rfind('-')>0))
+				  {
+					   pp_rows[r][c]=CParser::calculate(el,First);
+				  }
+				  else
+					  {
+						   pp_rows[r][c]=atof(el.c_str());
+						}
+				  validate_mat[r][c]=true;
+			  }
 
+			  if((h[i]==' ')||(h[i]==',') ||((i== (h.length() -1) )) )
+			  {
+				  if(el.find_first_of("+/*^()")!=string::npos || (el.rfind('-')>0))
+				  {
+					   pp_rows[r][c]=CParser::calculate(el,First);
+				  }
+				  else 
+					  {
+						   pp_rows[r][c]=atof(el.c_str());
+					  }
+				  validate_mat[r][c]=true;
+				  c++;
+				  el="";
+			  }
+			  else if(((h[i]==';')||(h[i]==13)) &&(i!=h.length()-1)) 
+			  {
+				 if(el.find_first_of("+/*^()")!=string::npos || (el.rfind('-')>0))
+				  {
+					  pp_rows[r][c]=CParser::calculate(el,First);
+				  }
+				  else 
+					  {
+						  pp_rows[r][c]=atof(el.c_str());
+						 }
+				 validate_mat[r][c]=true;
+				 c=0; 
+			   	 r++; 
+				 el="";
+			  }
+			  else el+=h[i];
 
-	if(mode==2)
-	{
-		mats.push_back(CMatrix(h,"#"+to_string(temp_counter++)));
-		return mats[mats.size()-1].name;
-	}
-	else return h;
+			  if((i+1)== (h.length()-1))   //the solution for: i==h.length()!!!!!!
+				  el+=h[i+1];
 
-}
+			  
+		  }
+		  //matrix validation
+		  if((this->nrows==this->ncols)&&(this->nrows==1))
+		  {
+			  if(!validate_mat[0][0])
+				  throw("0*0 matrix");
+		  }
+		  else
+		  {
+		  for(int i=0;i<this->nrows;i++)
+			  for(int j=0;j<this->ncols;j++)
+				  if(validate_mat[i][j]==false)
+					  throw("dimensions mismatch");
+		  }
+	  }
 
-
-string CParser::handle_parentheses(string& s, char c )
-{
-	string ss = "";  string o = "";  //ss temp string to get a string between 2 brackets and call urself
-                                     // o is a string to accumlate what i have finished
-	int start = 0; int end = 0;      // start and end are variables to find '(' and corresponding  ')'
-
-	int i = 0; static int count = -1; //i var to loop on string, //count var to be seen in all recursions to get $1, $2..etc
-
-	if (s.find(')') ==-1)  //if a string does not contain any brackets then return
-			return s;
-
-	while (    i<s.length()   ) //loop on the string
-	{
-		if (s[i] == '(')
-		{        //if i find a opening of a bracket
-			int j = 0;
-			{
-				while (j < s.length()) //getting the position of the corresponding ')'
-				{
-					if (s[j] == '(')
-						start++;
-					else if (s[j] == ')')
-						end++;
-					if (start == end && (s[j] == '(' || s[j] == ')'))
-						break;
-					j++;
-				}
-				ss = s.substr(i + 1, j - i - 1); //getting the string between these '(' ')'
-			}
-			o += handle_parentheses(ss , '1') + "_"; 
-			
-			//calling myself with a string betwwen '('  ')'
-			//the whole idea is just about calling yourself with a smaller string between '(' ')'
-			//until u find a string that does not contain any brackets then return
-			//then replace that bracket with all what is inside it with a variable name $n 
-			//dont care about this 1 parameter now, it will be explained later
-
-			count++;
-			s.replace(i, j - i + 1, "$" + to_string(count) );
-			
-			if (s.find('(') == -1)
-			{
-				if (s.length() < 4) //if s is only $1 after replacement, decrement count
-				{
-					count--;
-				}
-				else
-				  o += s;
-			}
-			//if my string contains no brackets then all brackets have been replaced
-			// with dollar sign variables, then i will add this to string o
-		}		
-		i++;
-    }
-	if (c == '0')
-	{     
-		count = 0;
-		i = o.length() - 1;
-
-		while (o[i] == '_')
-		{
-			o.erase(i,1);
-			i--;
-		}
-
-	}
-	//c is a dummy variable, if c='0' that means that i will go to main after return o
-	// so i must reset static variable count to zero for next time using this function
-	//if the last character of the string to be returned to main=='_' then remove this underscore
-	 
-	return o;
-}
-
-//a function to handle priorities in a string, it takes a string and an array containing operators having the same priority
-//for example the array can be * , / ,%..... another array can be sin, cos, tan, log
-//if the input string is A*B+C/3 the output will be A*B_C/3_
-
-
-string CParser::handle_priorities_2(string &s, string*op, int n_op, int continuee , char cc )
-{
-	//the whole idea of the function is taking a string that contain many operations(A*B+C/3), and taking an array of strings
-	//that contain the operations that have the same priority like *,/ then finding which of them occurs first
-	//then store the operation and its operands in string q, then replacing the original string with a hash and an index
-	//then calling yourself again with the new string, and accumlating strings in string o
-
-	int  j = 0, k = 0, l, pos = -1, start = 0;
-	static int count = 0;
-	//j first time counter for operation in array, k to put where you found the operation
-	//l to know index of operation in the array that comes first
-	//pos to know position of which op will be first
-	string o, q;
-	if (continuee == 0)
-	{
-		count = 0;
-	}
-
-	for (j = 0; j < n_op; j++)
-	{
-		//here i look for the first operation appearing in the string, note that the array contains
-		//operations with the same priority
-
-		k = s.find(op[j]);
-		if ((k < pos && k != -1) || (pos == -1 && k > pos))
-		{
-			if (k > 0)
-			{
-				if (op[j].length() == 1 & s[k - 1] == '.')
-					continue;//handling the condition for * , .*
-			}
-			     pos = k;
-				 l = j;
-			}
-		}
-	
-	j = pos - 1; start = pos;
-	if (pos != -1)
-	{
-		while (j < s.length() && j >= 0)//getting the operands of the operation backwards
-		{
-			if (s[j] != '*' &  s[j] != '/' &  s[j] != '^' &  s[j] != '+' & s[j] != '-' & s[j] != '\'')
-			{ 
-				q = s[j] + q; start = j;
-			}
-			else
-				break;
-			j--;
-		}
-		j = pos + op[l].length(); q += op[l];
-		//pushing j to right hanside if operation
-
-		while (j < s.length() && j >= 0)//getting the operands of the operation forward
-		{
-			if( s[j]!='*' &  s[j] != '/' &  s[j] != '^' &  s[j] != '+' & s[j] != '-' & s[j] != '\'' )
-			{
-				q += s[j];
-			}
-			else
-				break;
-			j++;
-		}
-		if ( q[q.length() - 1] == '.') //3shan lw hwa bya5od mn odamo lw la2a ./ msln hya5od el dot
-										//bs fe nfs el wa2t lw da raqam f momkn ykon feh decimal
-			q.erase(q.length()-1,1);
-
-		o += q + "_";
-		//replacing the operation and its operands with a hash after adding it to o
-		
-		s.replace(start, q.length() , "#" + to_string(count));
-		count++;
-		o += handle_priorities_2(s, op, n_op, 1, '1') + "_";
-	}
-	if (cc == '0')
-	{    //cc is a dummy variable to know that u are in the last recursion and will return to main
-		//this section only deletes unnecessary underscores of the string
-
-		j = 0; 
-		if (o.length() == 0)
-		return o;
-		while (j < o.length() - 1)
-		{
-		    if (o[j] == '_' & o[j + 1]=='_')
-			{
-				o.erase(j, 1); j--;
-			}
-			  j++;
-		}
-		
-	}
-	return o;
-}
+ void CMatrix::print_mat()   //we need also to print the name   //and activate the static variable print
+	  {
+		  if(CMatrix::print)
+		  {
+			  cout<<name<<" ="<<endl;
+			  for(int i=0;i<nrows;i++)
+			  {
+				  for(int j=0;j<ncols;j++)
+				  {
+					  cout<<"     "<<pp_rows[i][j];
+				  }
+				  cout<<endl;
+			  }
+		  }
+	  }
 
 
 
-string CParser:: handle_priorities(string  &s)
-{
-	//just creating arrays containing the operations to be used
-	//op0 operators have higher priority than op1 operators..
-	string op0[9];
-	op0[0] = "sin"; op0[1] = "cos"; op0[2] = "log"; op0[3] = "ln"; op0[4] = "sqrt";
-	op0[5] = "^"; op0[6] = "'"; op0[7]="det"; op0[8]="inv";
-	string op1[3];
-	op1[0] = "*"; op1[1] = "/"; op1[2] = "%";
-	string op2[2];
-	op2[0] = "+"; op2[1] = "-";
-	string op3[4];
-	op3[0] = ".^"; op3[3] = ".*"; op3[1] = "./"; op3[2] = ".%";
-	string op4[2];
-	op4[0] = ".+"; op4[1] = ".-";
-
-	//there may be a bug here, because priority of + is higher than .+ operations
-	//if we have an example1: A./3+4 (it will be treated as A./(3+4) bec, i divided A by 3, the matrix result has no operation on a 
-	//const just by using + operator. matrix+const is invalid).. if we have an operation like A./3+4./B (it will be treated as (A./7)./B)
-	//one may think that we should divide A by 3, 4 divide B, then add the 2 matrices, the conflict appears because
-	//the operators not having same order of priorities in the 2 examples
-	//i chose to treat it as ( (A./7)./B) bec it is still a valid operation (one can do A./B where a and b are matrices)
-	//but if i chose dot '.' operations to be higher in priority than + operation, example one will not be a valid operation
-	//if the user just wanted (A./3)+(4./B) he must use brackets
-	//it is so tedious to handle the case of changing priorities depending on the different combinations of the operands!
-
-	
-	int i = 0, k = 0, start = 0; string q ,o, temp;
-	s += '_';
-	//splitting a part of the string using '_', handing this part to handle_priorities_2, which operates on the priorities
-	//accumlating in o to be returned
-	while (s.find('_', start) != -1)
-	{
-		k = s.find('_', start);
-		q = s.substr(start, k - start);
-		start = k + 1;
-		temp= handle_priorities_2(q, op0, sizeof(op0)/sizeof(op0[0]), 0);
-		temp+= handle_priorities_2(q, op1, sizeof(op1) / sizeof(op1[0]), 1);
-		temp+= handle_priorities_2(q, op2, sizeof(op2) / sizeof(op2[0]), 1);
-		temp+= handle_priorities_2(q, op3, sizeof(op3) / sizeof(op3[0]), 1);
-		temp += handle_priorities_2(q, op4, sizeof(op4) / sizeof(op4[0]), 1);
-		o += temp;
-		if (temp.length() != 0)
-			o += "!";
-		else
-			o += q + "_" + "!";
-	}
-	
-
-	return o;
-}
-
-
-string CParser::m_remove_spaces(string s)
-{
-	 int flag=0;
-	
-
-	if(s.find('[')==-1)
-	{
-		for(int i=0; i<s.length();i++)
-		{
-			if(s[i]==' ')
-			{s.erase(i,1); i--;}
-
-		}
-		return s;
-	}
-
-
-	for(int i=1; i<s.length()-1;i++)
-	{
-		//looping on all string chars, if there is 2 spaces after each other remove one of them
-		//check if [ ( have space after them then remove the space
-		//check if ] ) have space after them then remove the space
-		//loop from 1 to length-1 so i+1 and i-1 do not give runtime errors
-
-		if(s[i]==' ' && s[i+1] ==' ')
-		{ s.erase(i,1); i--; }
-		else if ( (s[i-1]=='[' || s[i-1]=='(') && s[i]==' ')
-		{ s.erase(i,1);  }
-		else if ( (s[i+1]==']' || s[i+1]==')') && s[i]==' ')
-		{ s.erase(i,1);  }
-	}
-	//handling s[0] s[1] and s[length-1]
-
-	if(s[0]==' ') { s.erase(0,1); flag=-1;} 
-	if(s[1+flag]==' ') s.erase(1+flag,1); 
-	if(s[s.length()-1]==' ') s.erase(s.length()-1,1); 
-
-	;
-	int open_brac=0, closed_brac=0;
-	flag=0;
-	
-	//at this point our string contains spaces with maximum one space (not more than one space at a time)
-	//now we remove unnecessary spaces
-	//checking operators and removing unnecessary spaces before and after them
-
-
-
-	for(int i=1; i<s.length()-1; i++)
-	{
-		if(s[i]=='(')	   open_brac++;
-		else if(s[i]==')') closed_brac++;
-		
-		if( (open_brac>closed_brac) && (open_brac != 0) )
-		{
-			if(s[i]==' ')
-			{s.erase(i,1); i--;}
-			continue;
-		}
-		if(s[i]=='=' || s[i]==';' || s[i]==',' || s[i]=='.'||
-			s[i]=='^' ||s[i]=='/' ||s[i]=='*' ||s[i]=='\'')
-			{
-				if(s[i-1]==' ')		 { s.erase(i-1,1); i--;  }
-				if(s[i+1]==' ')		 { s.erase(i+1,1); i--;	 }
-				
-				
-		    }	
-	}
-	char q= s[s.length()-1];
-	    if(q=='=' || q==';' || q==',' || q=='.'||
-		   q=='^' ||q=='/' || q=='*'  || q=='\''  || 
-		   q=='-' || q=='+')
-	
-	  {  if(s[s.length()-2]==' ')  s.erase(s.length()-2,1);      }
-
-
-	return s;
-}
-
-
-string CParser::detect_operan(string &s)
-{
-string m;
-
-if (s.find_first_not_of("0123456789.") == string::npos)
-return "const";
-//for matrix
-else if ((s.find('[') != string::npos)||(s.find("rand") != string::npos)||(s.find("eye") !=
-string::npos)||(s.find("ones") != string::npos)||(s.find("zeros") != string::npos))
-return "matrix";
-else
-return "temp";
-}
-
- void CParser::remove_spaces(string&str)
+ CMatrix CMatrix::trigofmatrix (CMatrix &a , string type)
  {
-
-	 int i=0, len, j,toll;
-	 bool no3= true ;
-	len=str.length();
-	toll=str.length();
-	string s= detect_operan(str) ;
- 	if(s=="matrix")
-		no3=false ;
-	
-	int c=0 ;
-	for(i=0;i<len;i++)
-	{
-	if(str[0]==' ')
-		{
-			c++ ;
-			str.erase(0,1) ;
-		   len--;
-		}
-	}
-	for(i=0; i<len; i++)
-	{
-		if(str[i]=='('&& s=="matrix")
-		no3=true;
-		if(str[i]==')'&& s=="matrix")
-			no3=false ;
-		if(str[i]==' '&&str[i+1]==' ')
-		{
-			
-			c++ ;
-			for(j=i; j<len; j++)
-			{
-				str[j]=str[j+1];
-			}
-		   len--;
-		    i--;
-		}
-		
-		if(str[i]==' '&&((str[i+1]=='s'&&no3==true)||(str[i+1]=='c'&&no3==true)||str[i+1]=='+'||str[i+1]=='*'||str[i+1]=='/'||str[i+1]=='l'
-			||str[i-1]=='+'||str[i+1]=='='||str[i-1]=='='||str[i-1]=='n'||str[i-1]=='c'||str[i-1]=='*'||str[i-1]=='/'||str[i-1]=='l'||(no3==true&&(str[i+1]=='-'||str[i+1]=='('||str[i-1]==')'))
-			||str[i-1]=='-'||str[i-1]=='('||str[i+1]==')'||str[i+1]=='.'||str[i+1]=='e'||str[i+1]=='t'||str[i+1]=='^'
-			||str[i-1]=='^'||str[i-1]=='g'||str[i-1]=='['||str[i+1]==']'
-			||str[i-1]=='x'||str[i+1]=='x'||str[i-1]=='y'||str[i+1]=='y'||str[i-1]=='z'||str[i+1]=='z'||str[i-1]==';'||str[i+1]==';'))
-		{
-			c++ ;
-			for(j=i; j<len; j++)
-			{
-				str[j]=str[j+1];
-			}
-		len--;
-		}
-		 
-	}
-	str=str.erase(toll-c,toll) ;
+	 CMatrix m(a.nrows,a.ncols);
+	 for(int i=0;i<m.nrows;i++)
+	 {
+		 for(int j=0;j<m.ncols;j++)
+		 {
+			 if(type=="sin")
+			 {
+				 m.set_element(i,j,sin(a.pp_rows[i][j]));
+			 }
+			 else if(type=="cos")
+			 {
+				 m.set_element(i,j,cos(a.pp_rows[i][j]));
+			 }
+			 else if(type=="tan")
+			 {
+				 m.set_element(i,j,tan(a.pp_rows[i][j]));
+			 }
+			 else if(type=="exp")
+			 {
+				 m.set_element(i,j,exp(a.pp_rows[i][j]));
+			 }
+			 else if(type=="log")
+			 {
+				 if(a.pp_rows[i][j]<=0) throw(0);
+				 m.set_element(i,j,log10(a.pp_rows[i][j]));
+			 }
+			 else if(type=="ln")
+			 {
+				 if(a.pp_rows[i][j]<=0) throw(4);
+				 m.set_element(i,j,log(a.pp_rows[i][j]));
+			 }
+			 else if(type=="sqrt")
+			 {
+				 if(a.pp_rows[i][j]<0) throw(2) ;
+				 m.set_element(i,j,sqrt(a.pp_rows[i][j]));
+			 }
+		 }
+	 }
+	 return m;
  }
 
 
-/*
- float CParser::domath(string&a)
+ CMatrix CMatrix::cal_vectors ( vector<CMatrix>renew , string op )
 {
-	string n1 = ""; float result=0;
-	unsigned int length = a.length();
-	 int no_of_char = 0;
-	  string last="";
-	vector <float> v;
-	vector<char> signs;
-	string function="";
-	while(no_of_char < length)
-	{
-		if( CMatrix::checkchar(a[no_of_char]) ||(a[no_of_char]=='-' && n1==""&&last!=")") )
-		{
-			if(last=="^") 
-			{
-				while( (CMatrix::checkchar(a[no_of_char]))||(a[no_of_char]=='-'&&n1==""))
-				{
-					n1+=a[no_of_char];
-					no_of_char++;
-				}
-			v.push_back(pow(result , atof( n1.c_str())));
-			last = ")";
-			n1="";
-			}
-			else
-			{
-			n1+=a[no_of_char];
-			no_of_char++;
-			last="!";
-			}
-		}
-		else if (a[no_of_char]=='^')
-		{
-			result = atoi (n1.c_str());
-			last = "^";
-			n1="";
-			no_of_char++;
-		}
-		else if(a[no_of_char]=='+' ||(a[no_of_char]=='-')||a[no_of_char]=='*'||a[no_of_char]=='/')
-		{
-			
-			if(n1!="")
-			{
-				result = atof(n1.c_str());
-				v.push_back(result);
-				result = 0;
-				n1="";
-			}
-			signs.push_back(a[no_of_char]);
-			no_of_char++;
-			last = "$";
-		}
-		else if( (a[no_of_char] == 'l'&&a[no_of_char+1]=='o'&&a[no_of_char+2]=='g')||(a[no_of_char] == 's'&&a[no_of_char+1]=='i'&&a[no_of_char+2]=='n')
-			||(a[no_of_char] == 'c'&&a[no_of_char+1]=='o'&&a[no_of_char+2]=='s')||(a[no_of_char] == 't'&&a[no_of_char+1]=='a'&&a[no_of_char+2]=='n')||
-			(a[no_of_char] == 's'&&a[no_of_char+1]=='e'&&a[no_of_char+2]=='c')||(a[no_of_char] == 'c'&&a[no_of_char+1]=='s'&&a[no_of_char+2]=='c') ||
-			a[no_of_char] == 'e'&&a[no_of_char+1]=='x'&&a[no_of_char+2]=='p')
-		{
-			bool flag=0;
-			string function="";
-			function += a[no_of_char];
-			function+=a[no_of_char+1];
-			function+=a[no_of_char+2];
-			no_of_char = no_of_char +3;
-			if(n1!="")
-			{
-				result = atof(n1.c_str());
-				v.push_back(result);
-				result = 0;n1="";
-			}
-			while((CMatrix::checkchar(a[no_of_char])||(a[no_of_char]=='-'&&n1==""))&&no_of_char < length)
-					{
-						n1+=a[no_of_char];
-						no_of_char++;
-					}
-			result = atof(n1.c_str());
-			n1="";
-			if(function=="sin") v.push_back(sin(result));
-			if(function=="cos")v.push_back(cos(result));
-			if(function=="tan")v.push_back(tan(result));
-			if(function=="log"){if (result<=0 ) throw(0); else {v.push_back(log10(result));}}
-			if(function=="sec")v.push_back(1.0/cos(result));
-			if(function=="csc"){ if (result == 1.5707 ) throw (2) ; else {v.push_back(1.0/cos(result));}}
-			if(function=="exp")v.push_back(exp(result));
-			result =0;
-			last=")";
-		}
-		else
-			no_of_char++;
-	}
-l1:	if(n1 != "")
-	{
-		float ni=stof(n1);
-		v.push_back(ni);
-	}
-	return vector_cal ( v , signs );
-}
-*/
-double CParser::vector_cal ( vector <double> v , vector<char>signs )
-{
-	float result = 0;
-	int size = v.size();
-	bool flag = false;int i,j;
-	double *p=new double[size];
-	if(size==1)
-	{
-		result = v[0];
-		return result;
-	}
-	for(int r =0;r<size;r++)
-	{
-		p[r] = v[r];
-	}
+	CMatrix result;
 
-	char *sign = new char[signs.size()];
-	for(int q =0;q<signs.size();q++)
-	{
-		sign[q] = signs[q];
-	}
-	double total;
-	while(size > 1)
-	{
-		for(i=0;i<size-1;i++)
-		{
-			if(sign[i]=='*' || sign[i]=='/')
-			{
-				flag = true;
-				break;
-			}
-		}
-		if(flag == true)
-		{
-			flag = false;
-			size--;
-			double *temp = new double[size];
-			for(j=0;j<size;j++)
-			{
-				if(j==i && sign[i] == '*')
-				{temp[j] = p[j]*p[j+1];if(size==1) return temp[j];}
-				else if(j==i && sign[i] == '/')
-					{  if(p[j+1]==0) throw(5); temp[j] = p[j]/p[j+1];if(size==1) return temp[j];}
-				else if ( j<i)
-					temp[j] = p[j];
-				else
-					temp[j] = p[j+1];
-			}
-			p=temp;
-			char*temps = new char [size-1];
-			for(j=0;j<size-1;j++)
-			{
-				if(j<i)
-					temps[j] = sign[j];
-				else
-					temps[j]=sign[j+1];
-			}
-			sign = temps;
-		}
-		else
-		{
-			size--;
-			double *temp = new double[size];
-			if(sign[0] == '-') {temp[0] = p[0]-p[1];result = temp[0];}
-			if(sign[0] == '+') {temp[0] = p[0]+p[1];result = temp[0];}
-			if(size>1)
-			{
-				for(j=1;j<size;j++)
-				{
-					temp[j] = p[j+1];
-				}
-				p=temp;
-			}
-			if(size-1 >=1)
-			{
-				char*temps = new char [size-1];
-				for(j=0;j<size-1;j++)
-				{
-					temps[j]=sign[j+1];
-				}
-				sign = temps;
-			}
-		}
-	}
-	return result;
-}
-
-
-
-
-
-
-
-
-double CParser::subcal(string h,int nb)
-{
-	//cout<<nb<<endl;
-	if(nb==0)
-		return calculate(h , Other); // modified instead of domath(h)
-	else
-	{
-		double result;
-		string part="";
-		int *pos=new int[nb];
-		int length=h.length();
-		int d=0;int i;int count=0;
-		for(i=0;i<length;i++)
-		{
-			i=h.find('(',i);
-			if(i==-1)break;
-			pos[d]=i;
-			//cout<<pos[d]<<endl;
-			d++;count++;
-		}
-		d=0;i=0;bool flag=true;
-		for(i=0;i<count;i++)
-		{
-			d=pos[i];
-			d++;
-			while(d<length)
-			{
-				if(h[d]=='(')
-				{part="";break;}
-				else if(h[d]==')')
-				{
-					flag=false;
-					break;
-				}
-				else part+=h[d];
-				d++;
-			}
-			if(flag==false)
-			{
-				flag=true;
-				break;
-			}
-		}
-		h=h.replace(pos[i],d-pos[i]+1,to_string(calculate(part , Other)));
-	//	cout<<"my favourite part is "<<h<<endl;
-		if(h.find('(',0)==-1)
-			return calculate(h , Other);   //modified instead of domath(h)
-		else
-		{
-			int l=0, count2=0;
-			while(l<h.length())
-			{
-				if(h.find('(',l)!=-1)
-				{
-					count2++;
-					l=h.find('(',l)+1;
-					//cout<<l<<endl;
-				}
-				else break;
-			}
-			 result = subcal(h,count2);
-		}
-		return result;
-	}
-}
-
-
-
-
-double CParser::calculate(string a , enum NoCalling detector)
-{
-	string w="";int no_of_char=0;string last;string mod;unsigned int coo=0;
-	int length = a.length();vector<double> v;vector<char>signs;double result=0;
-	while(no_of_char<length)
-	{
-		 if ( a[no_of_char]=='.' && a[no_of_char+1]=='^')
+	if( op=="^" || op==".^" ) 
+ 	{
+ 		if  (renew[0].type==true || renew[1].type==true)    // mat.^3 or mat^4
  		{
- 			if(w!="")
- 			{
- 				result = atof(w.c_str());
- 				w="";
- 			}
- 			no_of_char=no_of_char+2;
- 			last="^";
+ 			result = (renew[0].type==true)? renew[0] : renew[1] ;
+ 			double power = (renew[0].type==false)?renew[0].pp_rows[0][0] : renew[1].pp_rows[0][0] ;
+ 			if(op==".^") return result.mat_pow_num(power) ;
+ 			else return result^power;
  		}
+ 		else  //Num^Num
+ 		{
+ 			float to_be_returned = pow (renew[0].pp_rows[0][0] , renew[1].pp_rows[0][0]) ;
+ 			result.ncols = 1 ; result.nrows = 1 ; result.type=false;
+ 			result.pp_rows[0][0]=to_be_returned ; 
+ 			return result ;
+ 		}
+ 	}
 
-		else if(CMatrix::checkchar(a[no_of_char]) || (a[no_of_char]=='-' &&w==""&&last!=")") )
+
+	if((op == ".*" )|| (op == "./") ||(op == ".+" )||(op == ".-" ) ) /* matrix .* matrix  OR no ./ matrix */
+	{
+		if(renew[0].type==true && renew[1].type ==true)  /* matrix .- matrix */
 		{
-			w+=a[no_of_char];
-			if(last!="^")last = "!";
-			else last="^";
-			if(no_of_char+1 == length&&last=="^") { v.push_back(pow(result,atof(w.c_str())));w="";result=0;}
-			no_of_char++;
+			if( op == ".+" ) return renew[0]+renew[1]  ;   /* should return renew[0] .+ renew[1] */
+			else if ( op ==".-") return renew[0]-renew[1] ; 
+			else if ( op == ".*" ) return renew[0].partial_mul(renew[1]) ;
+			else return renew[0].partial_div(renew[1]);
 		}
-		else if(a[no_of_char]=='+' ||(a[no_of_char]=='-')||a[no_of_char]=='*'||a[no_of_char]=='/')
+		else    // num .+ matrix 
 		{
-			if(result!=0&&last==")")
-			{
-				v.push_back(result);
-				result=0;
-				coo=0;
-			}
-			if(last=="^" && w!="")
-			{
-				v.push_back(pow(result,atof(w.c_str())));
-				w="";
-				result=0;
-			}
-			if(w!="")
-			{
-			result=atof(w.c_str());
-			v.push_back(result);
-			result=0;w="";
-			}
-			signs.push_back(a[no_of_char]);
-			no_of_char++;
-			last="$";
+			float number = 0;
+			if(!renew[0].type) {number = renew[0].pp_rows[0][0];result = renew[1];}
+			else{ number = renew[1].pp_rows[0][0]; result = renew[0];}
+			if( op == ".*" ) return result*number ;
+			else if(op=="./"){ if(renew[0].type==true) return renew[0] / renew[1].pp_rows[0][0] ; return result.num_div_mat(number); } 
+			else if ( op==".+") return result + number;
+			else  return result - number;
 		}
-
-
-		else if(a[no_of_char]=='^')
+	}
+	else  /* number+number OR matrix + matrix */
+	{
+		if(renew[0].type && renew[1].type )  /* matrix + matrix */
 		{
-			if(w!="")
-			{
-				result = atof(w.c_str());
-				w="";
-			}
-			no_of_char++;
-			last="^";
+			if(op=="+"||op==".+") return renew[0] + renew[1];
+			else if (op == "-"||op==".-") return renew[0] - renew[1];
+			else if (op == "*") return renew[0] * renew[1];
+			else if (op==".*") return renew[0].partial_mul(renew[1]) ; // should return renew[0].partial_mul(renew[1])
+			else if (op=="./") return renew[0].partial_div(renew[1]) ; // should return renew[0].partial_div(renew[1])
+  			else return renew[0]/renew[1];		  			
 		}
-
-
-
-
-		else if( (a[no_of_char] == 'l'&&a[no_of_char+1]=='o'&&a[no_of_char+2]=='g')||(a[no_of_char] == 's'&&a[no_of_char+1]=='i'&&a[no_of_char+2]=='n')
-			||(a[no_of_char] == 'c'&&a[no_of_char+1]=='o'&&a[no_of_char+2]=='s')||(a[no_of_char] == 't'&&a[no_of_char+1]=='a'&&a[no_of_char+2]=='n')||
-			(a[no_of_char] == 's'&&a[no_of_char+1]=='e'&&a[no_of_char+2]=='c')||(a[no_of_char] == 'c'&&a[no_of_char+1]=='s'&&a[no_of_char+2]=='c') 
-			||(a[no_of_char] == 'e'&&a[no_of_char+1]=='x'&&a[no_of_char+2]=='p')||(a[no_of_char]=='l'&&a[no_of_char+1]=='n'))
+		else /* number + number */
 		{
+			result.type=false;result.nrows=1;result.ncols=1;
+			if(op == "+") result = renew[0]+renew[1];
+			else if ( op =="-") result = renew[0]-renew[1];
+			else if (op == "*") result = renew[0]*renew[1];
+			else result = renew[0]/renew[1];
+		}
+	}
+}
 
-			if ( detector == 0)
+ CMatrix CMatrix::calculatemat(string a[],int n)  /* Return result of matrix operation */
+{
+	CMatrix first(0,0) ,second(0,0);
+	vector<CMatrix> hash ;
+	vector<CMatrix> ds;
+	vector<CMatrix>renew;
+	int no =0;
+	string temp="";
+	string last="";
+	bool pushhash=0;
+	while(no<n)
+	{
+		temp= a[no];
+		int length = temp.length();
+		int no_char =0 ;
 
-			{
-
-			if(result!=0&&last==")")
-			{
-				v.push_back(result);
-				result=0;
-			}
-			string function="";
-			if(a[no_of_char]=='l'&&a[no_of_char+1]=='n') {function = "ln" ; }		
- 			else		
+		if((temp[0]=='s'&&temp[1]=='i')||(temp[0]=='l'&&temp[1]=='o')||(temp[0]=='c'&&temp[1]=='o')||(temp[0]=='t'&&temp[1]=='a')
+			||(temp[0]=='e'&&temp[1]=='x') ||(temp[0]=='l'&&temp[1]=='n') ) // therefore we have log or sin or exp or cos or tan
+		{
+			string function="";string special="" ;		 
+			if(temp[0]=='l'&&temp[1]=='n') {  function  = "ln" ; no_char = no_char + 3 ;/* special+=temp[no_char] */ ; }
+ 			else
  			{
- 				function+=a[no_of_char];
- 				function+=a[no_of_char+1];
- 				function+=a[no_of_char+2];
+ 				 function = temp.substr(0 , 3);
+ 				no_char+=4;
+				//special+= temp[no_char];
  			}
-			no_of_char=a.find('(',no_of_char);
-			if(w!="")
+			//no_char++;
+			int getno = atoi(temp.substr(no_char , length - no_char).c_str());
+			renew.erase(renew.begin()+renew.size()-1);
+			if(temp.find('#',0)!=-1) { renew.push_back(trigofmatrix(hash[getno] , function));}
+			else renew.push_back(trigofmatrix(ds[getno] , function));
+			no++;
+		}
+
+		else if ( temp[0]=='s' && temp[1]=='q')
+		{
+			string function = temp.substr(0 , 4);
+			no_char=5;
+			//string special ="";special+= temp[no_char];no_char++;
+			int getno = atoi(temp.substr(no_char , length - no_char).c_str());
+			renew.erase(renew.begin()+renew.size()-1);
+			if(temp.find('#' , 0)!=-1) {renew.push_back(trigofmatrix(hash[getno] , function));}
+			else renew.push_back(trigofmatrix(ds[getno] , function));
+			no++;
+		}
+		else if (temp=="00") break;
+		else if ((temp[0]=='#'&&temp[1]!='#') || (temp[0]=='$' && temp[1]!='$')) 
+		{
+			char special = temp[0];
+			no_char++;
+			int getno = atoi(temp.substr(no_char , length-no_char).c_str());
+			if(special=='#') renew.push_back(hash[getno]);
+			else renew.push_back(ds[getno]);
+			no++;
+		}
+		else if(temp==".+" || temp==".-" ||temp==".*" ||temp=="./"||temp=="+"||temp=="-"||temp=="*"||temp=="/"||temp=="^"||temp==".^")
+ 			{no++;continue;}
+		else if (checkchar(temp[0])||temp[0]=='-')    /* here we have a number so store it as 1*1 matrix */
+		{
+			CMatrix c ;
+			c.nrows=1;c.ncols=1;
+			c.type=false;
+			c.pp_rows=new double *[1];
+			c.pp_rows[0]=new double [1];
+			float rty = atof(temp.c_str());
+			c.pp_rows[0][0] =  rty ;
+			renew.push_back ( c );
+			no++;
+		}
+		else if ( (temp[0] >= 65 && temp[0] <= 90) || (temp[0] >= 97 && temp[0] <= 122))  /* can be no or matrix */
+		{
+			if(CVariables::check_for_var(temp)!= -1) /* therefore its a no*/
 			{
-				v.push_back(atof(w.c_str()));
-				w="";
-				signs.push_back('*');
-				last= function;
+				CMatrix c ; 
+				c.nrows=1;c.ncols=1;c.pp_rows=new double*[1];
+				c.pp_rows[0][0] = vars[CVariables::check_for_var(temp)].value;
+				renew.push_back(c);
+				no++;
 			}
-			int beginning = no_of_char;
-			w+=a[no_of_char];
-			no_of_char++;
-			int noopen=1;
-			int noclosed=0 ;
-			bool is_error = true;
-			while(no_of_char < a.length())
+			else    /* therefore its a matrix */
 			{
-				w+=a[no_of_char];
-				if(a[no_of_char]=='(')noopen++;
-				if(a[no_of_char]==')')noclosed++;
-				if(noopen==noclosed) {is_error=false;break;}
-				else 
-				{
-					no_of_char++;
-					continue;
-				}
+				renew.push_back(mats[check(temp)]);
+				renew[renew.size()-1].type=true;
+				no++;
 			}
-			if(is_error) throw(3) ;
-			int end = no_of_char;
-			w=w.erase(0,1);w=w.erase(w.length()-1,1);
-			double res = subcal(w,noopen-1);
-			w="";
-			if(function=="sin") v.push_back(sin(res));
-			if(function=="cos")v.push_back(cos(res));
-			if(function=="tan") if(res==1.5708) throw(1) ; else v.push_back(tan(res));
-			if(function=="log"){ if (res<=0 ) throw(0);else { v.push_back(log10(res));}}
-			if(function=="sec")if(res==1.5708)throw(5);v.push_back(1.0/cos(res));
-			if(function=="csc")if(res==0||res==3.14159)throw(5);v.push_back(1.0/sin(res));
-			if(function=="exp")v.push_back(exp(res));
-			if(function=="ln" ) if(res<=0) throw(4) ; else v.push_back(log10(res));
-			result =0;
-			last = ")";
-			no_of_char=end+1;
+		}
+		else if (temp=="$$")
+		{
+			if(renew.size()==2) /* we have an operation .* or /*/
+			{
+				hash.push_back(cal_vectors(renew , a[no-2] ));
+				renew.erase ( renew.begin() , renew.begin()+2 ) ;
+				no++;
+			}
+			else  /*  we have only one element we want to store into hash */
+			{
+				hash.push_back(renew[renew.size()-1]);
+				renew.erase(renew.begin() , renew.begin()+1 );
+				no++;
+			}
+		}
+		else if ( temp=="##")
+		{
+			 if(renew.size()==2) /* we have an operation .* or /*/
+			{
+				ds.push_back(cal_vectors(renew , a[no-2] ));
+				renew.erase ( renew.begin() , renew.begin()+2 ) ;
+				hash.erase(hash.begin() , hash.begin()+hash.size() );
+				no++;
+			}
+			 else
+			 {
+				 ds.push_back(renew[renew.size()-1]);
+				 hash.erase(hash.begin() , hash.begin()+hash.size() );
+				 no++;
+			 }
 		}
 		else
 		{
-			bool flag=0;
-			string function="";
-			function += a[no_of_char];
-			function+=a[no_of_char+1];
-			function+=a[no_of_char+2];
-			no_of_char = no_of_char +3;
-			while((CMatrix::checkchar(a[no_of_char])||(a[no_of_char]=='-'&&w==""))&&no_of_char < length)
-					{
-						w+=a[no_of_char];
-						no_of_char++;
-					}
-			result = atof(w.c_str());
-			w="";
-			if(function=="sin") v.push_back(sin(result));
-			if(function=="cos")v.push_back(cos(result));
-			if(function=="tan")v.push_back(tan(result));
-			if(function=="log"){if (result<=0 ) throw(0); else {v.push_back(log10(result));}}
-			if(function=="sec")v.push_back(1.0/cos(result));
-			if(function=="csc")v.push_back(1.0/sin(result));
-			if(function=="exp")v.push_back(exp(result));
-			result =0;
-			last=")";
-		}
-		}
-
-		else if ( a[no_of_char]=='s' && a[no_of_char+1]=='q')
-		{
-			no_of_char=a.find('(',no_of_char);
-			int beginning = no_of_char;
-			w+=a[no_of_char];
-			no_of_char++;
-			int noopen=1;
-			int noclosed=0 ;
-			bool is_error = true;
-			while(no_of_char < a.length())
-			{
-				w+=a[no_of_char];
-				if(a[no_of_char]=='(')noopen++;
-				if(a[no_of_char]==')')noclosed++;
-				if(noopen==noclosed){is_error = false;break;}
-				else 
-				{
-					no_of_char++;
-					continue;
-				}
-			}
-			if(is_error) throw(3);
-			int end = no_of_char;
-			w=w.erase(0,1);w=w.erase(w.length()-1,1);
-			double res = subcal(w,noopen-1);
-			w="";
-			if (res < 0) throw (2) ;
-			else v.push_back(sqrt(res));
-			result =0;
-			last = ")";
-			no_of_char=end+1;
-		}
-
-		else if(a[no_of_char]=='(')
-		{
-			coo++;
-			if(w!="")
-			{
-				result = atof(w.c_str());
-				v.push_back(result);
-				signs.push_back('*');
-				result=0;last="(";w="";
-			}
-			w+=a[no_of_char];
-			int beginning = no_of_char;
-			no_of_char++;
-			int noopen=1;
-			int noclosed=0 ;
-			bool is_error = true ;
-			while(no_of_char < a.length())
-			{
-				w+=a[no_of_char];
-				if(a[no_of_char]=='(')noopen++;
-				if(a[no_of_char]==')')noclosed++;
-				if(noopen==noclosed) {is_error= false; break;}
-				else 
-				{
-					no_of_char++;
-					continue;
-				}
-			}
-			if(is_error) throw(3) ; 
-			int end = no_of_char;
-		//	cout<<noclosed<<"       "<<noopen<<" "<<w<<endl;
-			w=w.erase(0,1);w=w.erase(w.length()-1,1);
-			if(last!="^")
-			{
-				if(coo==1) result=subcal(w,noopen-1);
-				if(coo==2) {if(result!=0){v.push_back(result);}result=subcal(w,noopen-1);v.push_back(result);coo=0;}
-			}
-			if(last=="^")
-			{
-				double e = subcal(w,noopen-1);
-				v.push_back( pow( result,e ));
-				coo=0;result = 0;
-			}
-			w="";
-			last=")";
-			no_of_char=end+1;
-		}
-		else
-		{
-			no_of_char++;
+			no++;
 			continue;
 		}
-	}
-	if(result!=0)
+	}	
+
+	if ( renew.size() == 2 )
 	{
-		v.push_back(result);
+		return cal_vectors(renew , a[no-2] );
+	}
+	else
+		return renew[renew.size() - 1 ] ;
+}
+
+
+CMatrix CMatrix::calculate_expression(string s)
+{
+	//////// cout part /////////////
+	//cout << endl << "  my_string = " << s << endl<<endl;
+	
+	string my_string_after_parentheses = CParser::handle_parentheses(s);
+	string my_string_after_priorities =CParser:: handle_priorities(my_string_after_parentheses);
+
+	/////////// cout part //////////
+	//cout << "  my_string_after_parentheses = " << my_string_after_parentheses << endl<<endl;
+	//cout << "  my_string_after_priorities  = " << my_string_after_priorities << endl<<endl;
+
+	
+
+	//the part before this line working fine
+
+	string my_operation_as_lines[30];//just an arbitary number for the max 
+									 //parsing string after priorities..i.e if i have c*D_#0.+4 
+									 //the [0] = c*D, [1]= #0.+4 [2]="$$"
+
+	int counter_arr_myop_as_lines = 0; int start = 0;
+
+   
+
+	for (int j = 0; j < my_string_after_priorities.length(); j++)
+	{
+		if (my_string_after_priorities[j] == '_')
+		{
+			my_operation_as_lines[counter_arr_myop_as_lines] = my_string_after_priorities.substr(start, j - start );
+			start = j + 1;
+			counter_arr_myop_as_lines++;
+		}
+		else if (my_string_after_priorities[j] == '!')
+		{
+			my_operation_as_lines[counter_arr_myop_as_lines] = "$$";
+			start = j + 1;
+			counter_arr_myop_as_lines++;
+		}
+	}
+	my_operation_as_lines[counter_arr_myop_as_lines-1] = "00";
+
+	///////////////   cout part //////////////
+
+	//cout << endl << "  my_operation_as_lines = " << endl;
+	//for (int j = 0; j < counter_arr_myop_as_lines; j++)
+	//	cout << "  " << my_operation_as_lines[j] << endl;
+	//part before this line working fine
+	
+
+	string my_operation[100];
+	
+	//array similar to one we dealt with in dop in phase1, [0]=c ,[1]=*, [2]=D [4]=$$
+	//difference is between operation of the same line there is "$$"
+	//when the line ends there is "##"
+	//at the end of the array at the end of all lines there is "00"
+
+	int  index = 0, pos = 0, my_operation_index = 0;
+	string q;
+
+	q = my_operation_as_lines[index];
+	
+	//index is a variable to loop on an a previous array, it is not very important
+	//my_operation_index is a variable used to store in my_operation array, after this loo
+	//my_operation_index carries number of elements in my_operation array
+	//q is just a temp string to hold the string in my_operation_as_lines[index]
+	//pos is integer to store where i find the operators like .+ , / , *
+
+	
+	while (index < counter_arr_myop_as_lines)
+	{
+		//^,*,/,+,-,.^,*,./,.+,.-,sin,cos,log,ln,'
+
+		q = my_operation_as_lines[index];
+
+		if (q == "$$")
+		{
+			my_operation[my_operation_index-1] = "##";
+			
+		}
+		else if (q == "00")
+		{
+			my_operation[my_operation_index-1] = "00";
+			my_operation_index++;
+			break;
+		}
+
+
+		else if (q.find("sin") != -1 || q.find("cos") != -1 || q.find("'") != -1
+			|| q.find("log") != -1 || q.find("ln")!=-1 || q.find("sqrt") != -1)
+		{
+			my_operation[my_operation_index] = q;
+			my_operation_index++;
+			my_operation[my_operation_index] = "$$";
+			my_operation_index++;
+		}
+
+		else if ((pos = q.find(".^")) != -1 || (pos = q.find(".*")) != -1 ||
+			(pos = q.find("./")) != -1 || (pos = q.find(".+")) != -1 ||
+			(pos = q.find(".-")) != -1)
+		{
+			my_operation[my_operation_index] = q.substr(0, pos);
+			my_operation_index++;
+			my_operation[my_operation_index] = q.substr(pos, 2); //length of ./
+			my_operation_index++;
+			my_operation[my_operation_index] = q.substr(pos + 2, q.length() - (pos + 2) + 1 );//pos+2 is the number of char after ./ 
+			my_operation_index++;																			//+1 to take the last char
+			my_operation[my_operation_index] = "$$";
+			my_operation_index++;
+			
+		}
+		else if ((pos = q.find("^")) != -1 || (pos = q.find("*")) != -1 ||
+			(pos = q.find("/")) != -1 || (pos = q.find("+")) != -1 ||
+			(pos = q.find("-")) != -1)
+		{
+			my_operation[my_operation_index] = q.substr(0, pos);
+			my_operation_index++;
+			my_operation[my_operation_index] = q.substr(pos, 1); //length of +
+			my_operation_index++;
+			my_operation[my_operation_index] = q.substr(pos + 1, q.length() - (pos + 1 ) + 1 );
+			my_operation_index++;
+			my_operation[my_operation_index] = "$$";
+			my_operation_index++;
+		}
+		else
+		{
+			my_operation[my_operation_index] = q;
+			my_operation_index++;																			
+			my_operation[my_operation_index] = "##";
+			my_operation_index++;
+		}
+		
+		index++;
 	}
 
-	result=0;
-	if(w != "")
+	/////////// cout part ////////////////////
+	//cout << endl<<"  my operation = "<<endl;
+	//for (int j = 0; j < my_operation_index; j++)
+	//	cout<<"  "<<my_operation[j] << endl;
+	//part before this line is working fine
+
+	//here martin or farOoOoOoga will use the array my_operation to calculate the operations  in a similar way to phase1
+	//first 
+	//lines are divided in the array by ##, that means if an element in this array is ## this is a new line
+	//C*D, #0.+4 //means you will calculate C*D then store it, #0 refers to c*D, then #0.+4 refers to #1 and can be used
+	//then there is a new line u know this when you find ##
+	//the value of (C*D).+4 should be stored and known as $0
+    // my_operation may contain an element as a variable with no operation 
+	//say my_operation[1]="D"; then you will only store $1 as the value of D
+	
+	CMatrix result = calculatemat(my_operation, my_operation_index);
+
+
+return result;
+
+}
+
+
+bool CMatrix::checkchar(char x)  
+{
+	if( x=='0' || x =='1' || x=='2'||x=='3'||x=='4'||x=='5'||x=='6'||x=='7'||x=='8'||x=='9'||x=='.')
 	{
-		double ni=stof(w);
-		v.push_back(ni);
+		return true;
 	}
-	return vector_cal ( v , signs );
+	else return false;
+}
+
+int CMatrix::check(string name)
+{
+	int s = 0; unsigned int i;
+	for (i = 0; i < mats.size(); i++)
+	{
+		if (mats[i].name == name)
+		{
+			s = 1;
+			break;
+		}
+	}
+	if (s == 1)
+		return i;
+	else
+		return -1;
+}
+
+
+
+
+///////////////CVariables/////////////
+
+CVariables::CVariables(double value,string name)
+	{
+		this->name=name;
+		this->value=value;
+	}
+	void CVariables::print_var()
+	{
+		if(CMatrix::print)
+		{
+			cout<<name<<"="<<endl;
+			cout<<"            "<<value<<endl;
+		}
+	}
+int CVariables::check_for_var(string name_to_check )   /*function to check existance of variable like that of matrix*/
+	{
+		for(int i=0; i < vars.size() ; i++ )
+		{
+			if(vars[i].name == name_to_check)
+				return i;
+		}
+		return -1;
 	}
